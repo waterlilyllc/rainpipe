@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rainpipe - 週間ブックマーク</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>🌧️ Rainpipe</h1>
+    <p>週間ブックマーク振り返り</p>
+  </header>
+
+  <main>
+    <% if @week_start && @week_end %>
+      <h2>📅 <%= @week_start.strftime('%Y年%m月%d日') %> - <%= @week_end.strftime('%m月%d日') %></h2>
+    <% elsif @tag %>
+      <h2>🏷️ タグ: #<%= @tag %></h2>
+    <% end %>
+
+    <% if @bookmarks && @bookmarks.any? %>
+      <div class="bookmarks-list">
+        <% @bookmarks.each do |bookmark| %>
+          <article class="bookmark-item">
+            <h3><a href="<%= bookmark['link'] %>" target="_blank"><%= bookmark['title'] %></a></h3>
+            
+            <% if bookmark['excerpt'] && !bookmark['excerpt'].empty? %>
+              <p class="excerpt"><%= bookmark['excerpt'] %></p>
+            <% end %>
+            
+            <div class="meta">
+              <span class="created">📅 <%= format_date(bookmark['created']) %></span>
+              
+              <% if bookmark['tags'] && bookmark['tags'].any? %>
+                <div class="tags">
+                  <% bookmark['tags'].each do |tag| %>
+                    <span class="tag">#<%= tag %></span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </article>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="no-bookmarks">この期間にブックマークはありません。</p>
+    <% end %>
+  </main>
+
+  <footer>
+    <p><a href="/">今週</a> | <a href="/week/<%= previous_week %>">前週</a> | <a href="/week/<%= next_week %>">翌週</a></p>
+  </footer>
+</body>
+</html>
