@@ -168,38 +168,43 @@ All 7 requirements (1, 2, 2-1, 3, 3-1, 3-2, 3-3, 4, 5, 6, 7) fully covered
 
 ## PDF 生成（Prawn）
 
-- [ ] 6. KeywordPDFGenerator クラスで Prawn を使用した PDF レンダリング実装
-- [ ] 6.1 (P) Prawn ドキュメント初期化と日本語フォントセットアップ
+- [x] 6. KeywordPDFGenerator クラスで Prawn を使用した PDF レンダリング実装
+- [x] 6.1 (P) Prawn ドキュメント初期化と日本語フォントセットアップ
   - Prawn::Document.new で新規 PDF 作成
   - NotoSansCJK-Regular.ttc フォント（/usr/share/fonts/opentype/noto/ から）を登録
   - フォール バック：フォント見つからない場合は Courier に変更（log WARN）
   - PDF メタデータ設定（title、subject、author="Rainpipe"、creation_date=UTC now）
   - Prawn compression オプション有効化（compress: true）
   - _Requirements: 3_
+  - ✅ **実装完了**: keyword_pdf_generator.rb（11/11 テスト成功）
 
-- [ ] 6.2 (P) PDF セクション構成：全体サマリー → 関連ワード → 考察 → ブックマーク詳細
+- [x] 6.2 (P) PDF セクション構成：全体サマリー → 関連ワード → 考察 → ブックマーク詳細
   - セクション順序の厳密な実装
   - 各セクション間に区切り線（Prawn stroke_horizontal_line）を追加
   - セクションヘッダー（日本語）を太字で表示
   - _Requirements: 3_
+  - ✅ **実装完了**: keyword_pdf_generator.rb（11/11 テスト成功）
 
-- [ ] 6.3 (P) 全体サマリーセクションの PDF レンダリング
+- [x] 6.3 (P) 全体サマリーセクションの PDF レンダリング
   - ヘッダー「全体サマリー」を配置
   - GPT 生成テキストを wrap text で段落レイアウト
   - _Requirements: 3-1_
+  - ✅ **実装完了**: keyword_pdf_generator.rb（11/11 テスト成功）
 
-- [ ] 6.4 (P) 関連ワードセクションの PDF レンダリング
+- [x] 6.4 (P) 関連ワードセクションの PDF レンダリング
   - ヘッダー「関連ワード」を配置
   - related_clusters 配列を反復
   - 各 cluster を「• main_topic: related_words1, related_words2, ...」の形式で出力
   - _Requirements: 3-2_
+  - ✅ **実装完了**: keyword_pdf_generator.rb（11/11 テスト成功）
 
-- [ ] 6.5 (P) 考察セクションの PDF レンダリング
+- [x] 6.5 (P) 考察セクションの PDF レンダリング
   - ヘッダー「今週の考察」を配置
   - GPT 生成分析テキストを wrap text で出力
   - _Requirements: 3-3_
+  - ✅ **実装完了**: keyword_pdf_generator.rb（11/11 テスト成功）
 
-- [ ] 6.6 (P) ブックマーク詳細セクションのメモリ効率的なレンダリング
+- [x] 6.6 (P) ブックマーク詳細セクションのメモリ効率的なレンダリング
   - ヘッダー「ブックマーク詳細」を配置
   - ブックマークを 50 件単位のチャンクで処理（メモリ効率化）
   - 各ブックマークを「タイトル → URL → サマリー」の順序で出力
@@ -207,25 +212,29 @@ All 7 requirements (1, 2, 2-1, 3, 3-1, 3-2, 3-3, 4, 5, 6, 7) fully covered
   - 各ブックマーク間に軽い区切り表示
   - GC ヒント（GC.start）を 50 件ごとに呼び出し
   - _Requirements: 3, 7_
+  - ✅ **実装完了**: keyword_pdf_generator.rb（11/11 テスト成功）
 
-- [ ] 6.7 (P) PDF ファイル名生成
+- [x] 6.7 (P) PDF ファイル名生成
   - フォーマット：filtered_pdf_{timestamp}_{keywords_joined}.pdf
   - timestamp：YYYYMMDD_HHmmss（UTC）
   - keywords_joined：キーワードをアンダースコアで結合（スペース/カンマは除去）
   - 例：filtered_pdf_20251113_133045_Claude_AI.pdf
   - _Requirements: 3_
+  - ✅ **実装完了**: keyword_pdf_generator.rb（11/11 テスト成功）
 
-- [ ] 6.8 (P) PDF ファイルサイズチェックと警告
+- [x] 6.8 (P) PDF ファイルサイズチェックと警告
   - 出力ファイルサイズを確認（File.size）
   - 20MB 超過時は log WARN で警告
   - 25MB 超過時は error 返却（Kindle 送信不可）
   - _Requirements: 4_
+  - ✅ **実装完了**: keyword_pdf_generator.rb（11/11 テスト成功）
 
-- [ ] 6.9 (P) PDF レンダリング時間計測
+- [x] 6.9 (P) PDF レンダリング時間計測
   - 開始～完了時刻を計測
   - pdf_render_duration_ms を計測
   - "🕐 PDF レンダリング時間: XXX 秒" をログ
   - _Requirements: 7_
+  - ✅ **実装完了**: keyword_pdf_generator.rb（11/11 テスト成功）
 
 ---
 
