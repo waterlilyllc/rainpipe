@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rainpipe - ブックマーク管理</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>🌧️ Rainpipe</h1>
+    <p>ブックマーク管理・振り返りツール</p>
+  </header>
+
+  <nav class="main-nav">
+    <div class="search-box">
+      <form action="/search" method="get">
+        <input type="text" name="q" placeholder="ブックマークを検索..." id="search-input">
+        <button type="submit">🔍</button>
+      </form>
+    </div>
+    
+    <div class="nav-links">
+      <a href="/weekly" class="nav-button">📅 週間表示</a>
+      <a href="/monthly" class="nav-button">📆 月間表示</a>
+      <button id="refresh-btn" class="nav-button refresh-btn">
+        <span id="refresh-icon">🔄</span>
+        <span id="refresh-text">新着取得</span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="overview">
+      <h2>📊 概要</h2>
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-number">今週</span>
+          <span class="stat-label">のブックマーク</span>
+          <a href="/weekly" class="stat-link">→ 表示</a>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">今月</span>
+          <span class="stat-label">のブックマーク</span>
+          <a href="/monthly" class="stat-link">→ 表示</a>
+        </div>
+      </div>
+    </section>
+    
+    <section class="quick-links" style="margin-top: 30px;">
+      <h2>🚀 クイックアクセス</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+        <a href="/daily/summary" class="nav-button" style="background: #e74c3c; color: white; text-align: center; padding: 15px;">
+          📰 本日の観測サマリー
+        </a>
+        <a href="/interests" class="nav-button" style="background: #9b59b6; color: white; text-align: center; padding: 15px;">
+          🎯 関心ワード分析
+        </a>
+        <a href="/weekly/<%= Date.today.strftime('%Y-%m-%d') %>/summary" class="nav-button" style="background: #2ecc71; color: white; text-align: center; padding: 15px;">
+          📊 週次サマリー
+        </a>
+      </div>
+    </section>
+
+    <section class="recent-weeks">
+      <h2>📅 最近の週間</h2>
+      <div class="weeks-grid">
+        <% get_recent_weeks.each do |week| %>
+          <div class="week-card">
+            <h3><%= week[:label] %></h3>
+            <p><%= week[:start].strftime('%Y年%m月%d日') %> - <%= week[:end].strftime('%m月%d日') %>（月曜始まり）</p>
+            <a href="/week/<%= week[:start].strftime('%Y-%m-%d') %>" class="week-link">表示 →</a>
+          </div>
+        <% end %>
+      </div>
+    </section>
+
+    <section class="quick-actions">
+      <h2>🚀 クイックアクション</h2>
+      <div class="actions">
+        <a href="/weekly" class="action-button primary">今週のブックマーク</a>
+        <a href="/monthly" class="action-button">今月のブックマーク</a>
+        <a href="/filtered_pdf" class="action-button" style="background: #3498db; color: white;">🔍 キーワード別PDF</a>
+        <a href="/interests/scores" class="action-button">📊 関心ワードスコア</a>
+        <a href="/interests" class="action-button">🎯 関心ワード</a>
+        <a href="/kiro/articles" class="action-button">📰 Kiro最新記事</a>
+        <a href="/gemini/articles" class="action-button">🤖 Gemini CLI記事</a>
+        <a href="/search" class="action-button">検索</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Rainpipe - ブックマーク振り返りツール</p>
+  </footer>
+
+  <script>
+    // インクリメンタル検索
+    document.getElementById('search-input').addEventListener('input', function() {
+      const query = this.value.trim();
+      if (query.length > 2) {
+        // 300ms後に検索実行（デバウンス）
+        clearTimeout(this.searchTimeout);
+        this.searchTimeout = setTimeout(() => {
+          window.location.href = `/search?q=${encodeURIComponent(query)}`;
+        }, 300);
+      }
+    });
+  </script>
+  <script src="/refresh.js"></script>
+</body>
+</html>
