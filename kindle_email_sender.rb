@@ -45,13 +45,33 @@ class KindleEmailSender
       end
 
       mail.delivery_method :smtp, smtp_settings
+
+      puts "🔧 SMTP設定確認:"
+      puts "   From: #{ENV['GMAIL_ADDRESS']}"
+      puts "   To: #{ENV['KINDLE_EMAIL']}"
+      puts "   Subject: #{subject}"
+
       mail.deliver!
 
       puts "✅ メール送信成功！"
       true
+    rescue Timeout::Error => e
+      puts "❌ メール送信失敗（タイムアウト）: #{e.message}"
+      puts "   SMTP接続がタイムアウトしました。ネットワークを確認してください。"
+      false
+    rescue Net::SMTPAuthenticationError => e
+      puts "❌ メール送信失敗（認証エラー）: #{e.message}"
+      puts "   Gmailの認証情報が正しくありません。"
+      puts "   GMAIL_ADDRESS: #{ENV['GMAIL_ADDRESS']}"
+      puts "   アプリパスワード設定を確認してください。"
+      false
+    rescue Net::SMTPServerBusy => e
+      puts "❌ メール送信失敗（SMTPサーバビジー）: #{e.message}"
+      false
     rescue => e
-      puts "❌ メール送信失敗: #{e.message}"
-      puts e.backtrace.first(3).join("\n")
+      puts "❌ メール送信失敗: #{e.class.name}: #{e.message}"
+      puts "詳細:"
+      puts e.backtrace.first(5).join("\n")
       false
     end
   end

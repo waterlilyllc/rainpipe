@@ -206,9 +206,31 @@ class KeywordFilteredPDFService
 
     # Task 4.3: 結果をマージ
     merger = GatherlyResultMerger.new
-    merger.merge_results(completed_job_uuids, @bookmarks_without_summary)
+    merge_result = merger.merge_results(completed_job_uuids, @bookmarks_without_summary)
+
+    # マージ後のブックマークで @filtered_bookmarks を更新
+    # @bookmarks_without_summary のマージ結果を @filtered_bookmarks に反映
+    merged_bookmarks = merge_result[:merged_bookmarks]
+    updated_count = 0
+
+    @filtered_bookmarks.each do |bookmark|
+      # URLでマッチング（url または link キーをサポート）
+      bookmark_url = bookmark['url'] || bookmark['link']
+
+      merged = merged_bookmarks.find do |b|
+        merged_url = b['url'] || b['link']
+        merged_url && bookmark_url && merged_url == bookmark_url
+      end
+
+      if merged && merged['summary'] && merged['summary'].to_s.strip.length > 10
+        bookmark['summary'] = merged['summary']
+        updated_count += 1
+        puts "  ✓ #{bookmark['title']}: サマリー統合"
+      end
+    end
 
     puts "✅ Gatherly 本文取得完了: #{completed_job_uuids.length}/#{job_uuids.length} 成功"
+    puts "✅ Gatherly から取得した本文を #{updated_count} 件のブックマークに統合完了"
   end
 
   def generate_bookmark_summaries
@@ -219,14 +241,31 @@ class KeywordFilteredPDFService
     # Gatherly から取得した content (summary フィールドに入っている) を確認
     bookmarks_with_content = @filtered_bookmarks.select { |b| b['summary'] && !b['summary'].to_s.strip.empty? }
 
-    # Gatherly で取得したコンテンツのサマリーは既に完成しているため、GPT 生成はスキップ
     if bookmarks_with_content.empty?
       puts "⚠️  コンテンツを持つブックマークがありません。サマリー生成をスキップ"
       return
     end
 
-    # Note: Gatherly から取得した raw content をそのまま summary として使用
-    # GPT での要約生成は不要 (content 自体が詳細な本文を含んでいるため)
-    puts "✅ Gatherly から取得した本文を #{bookmarks_with_content.length} 件のブックマークに統合完了"
+    # Gatherly から取得した本文を GPT でサマリーしていく
+    gpt_generator = GPTContentGenerator.new(ENV['OPENAI_API_KEY'], false)
+
+    bookmarks_with_content.each_with_index do |bookmark, idx|
+      begin
+        content = bookmark['summary']
+        # Gatherlyから取得した本文をGPTでサマリー化
+        summary = gpt_generator.generate_bookmark_summary(content)
+
+        if summary && summary.to_s.strip.length > 10
+          bookmark['summary'] = summary
+          puts "  ✓ [#{idx + 1}/#{bookmarks_with_content.length}] サマリー生成: #{bookmark['title'][0..50]}..."
+        else
+          puts "  ⚠️  [#{idx + 1}/#{bookmarks_with_content.length}] サマリー生成失敗: #{bookmark['title'][0..50]}..."
+        end
+      rescue => e
+        puts "  ❌ [#{idx + 1}/#{bookmarks_with_content.length}] エラー: #{e.message}"
+      end
+    end
+
+    puts "✅ ブックマークサマリー生成完了: #{bookmarks_with_content.length} 件"
   end
 end

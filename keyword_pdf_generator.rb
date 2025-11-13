@@ -32,6 +32,20 @@ class KeywordPDFGenerator
     @start_time = Time.now
   end
 
+  # Markdown フォーマットをプレーンテキストに変換
+  def strip_markdown(text)
+    return text unless text.is_a?(String)
+
+    text
+      .gsub(/\*\*(.+?)\*\*/, '\1')     # **太字** → 太字
+      .gsub(/\*(.+?)\*/, '\1')         # *イタリック* → イタリック
+      .gsub(/__(.+?)__/, '\1')         # __太字__ → 太字
+      .gsub(/_(.+?)_/, '\1')           # _イタリック_ → イタリック
+      .gsub(/\[(.+?)\]\(.+?\)/, '\1')  # [リンク](url) → リンク
+      .gsub(/^#+\s+(.+)$/m, '\1')      # # ヘッダー → ヘッダー
+      .gsub(/^- /, '• ')               # - リスト → • リスト
+  end
+
   # Task 6: メイン生成メソッド
   # @param content [Hash] { summary, related_clusters, analysis, bookmarks, keywords, date_range }
   # @param output_path [String] 出力パス
@@ -48,25 +62,32 @@ class KeywordPDFGenerator
       # Task 6.1: PDF メタデータ設定
       set_metadata(pdf, content[:keywords])
 
-      # Task 6.2: セクション構成順序（全体サマリー → 関連ワード → 考察 → ブックマーク詳細）
+      # Task 6.2: セクション構成順序（ヘッダー → サマリー → 関連ワード → 考察 → 目次 → ブックマーク詳細 + フッター）
+      # ヘッダー
+      add_header(pdf, content[:keywords], content[:date_range], content[:bookmarks].length)
+
       # Task 6.3: 全体サマリーセクション
       overall_summary = content[:overall_summary] || content[:summary] || ''
-      render_overall_summary(pdf, overall_summary)
-      pdf.stroke_horizontal_line(0, pdf.bounds.width)
+      add_overall_summary(pdf, overall_summary)
 
       # Task 6.4: 関連ワードセクション
       pdf.start_new_page
-      render_related_keywords(pdf, content[:related_clusters])
-      pdf.stroke_horizontal_line(0, pdf.bounds.width)
+      add_related_keywords(pdf, content[:related_clusters])
 
       # Task 6.5: 考察セクション
       pdf.start_new_page
-      render_analysis(pdf, content[:analysis])
-      pdf.stroke_horizontal_line(0, pdf.bounds.width)
+      add_analysis(pdf, content[:analysis])
+
+      # 目次
+      pdf.start_new_page
+      add_table_of_contents(pdf, content[:bookmarks])
 
       # Task 6.6: ブックマーク詳細セクション（メモリ効率的）
       pdf.start_new_page
       render_bookmarks(pdf, content[:bookmarks])
+
+      # フッター（ページ番号）
+      add_page_numbers(pdf)
     end
 
     duration_ms = timing.elapsed_milliseconds
@@ -157,36 +178,110 @@ class KeywordPDFGenerator
     end
   end
 
+  # ヘッダーの追加
+  def add_header(pdf, keywords, date_range, bookmark_count)
+    pdf.text "キーワード検索レポート", size: 28, style: :bold, align: :center, color: '1a1a1a'
+    pdf.move_down(8)
+
+    pdf.text keywords, size: 16, align: :center, color: '0066CC', style: :bold
+    pdf.move_down(12)
+
+    period_text = "期間: #{date_range[:start]} ～ #{date_range[:end]}"
+    pdf.text period_text, size: 12, align: :center, color: '666666'
+    pdf.move_down(4)
+
+    pdf.text "ブックマーク件数: #{bookmark_count} 件", size: 11, align: :center, color: '666666'
+    pdf.move_down(20)
+
+    # 区切り線
+    pdf.stroke_color 'CCCCCC'
+    pdf.stroke_horizontal_line(0, pdf.bounds.width)
+    pdf.stroke_color '000000'
+    pdf.move_down(15)
+  end
+
   # Task 6.3: 全体サマリーセクションの PDF レンダリング
-  def render_overall_summary(pdf, summary)
-    pdf.text '全体サマリー', size: 18, style: :bold
-    pdf.move_down(10)
-    pdf.text summary, size: 11
+  def add_overall_summary(pdf, summary)
+    pdf.text 'キーワード検索 全体サマリー', size: 18, style: :bold, color: '1a1a1a'
+    pdf.move_down(8)
+
+    # 区切り線
+    pdf.stroke_color 'CCCCCC'
+    pdf.stroke_horizontal_line(0, pdf.bounds.width)
+    pdf.stroke_color '000000'
+    pdf.move_down(12)
+
+    # Markdown フォーマットを削除
+    clean_summary = strip_markdown(summary)
+    pdf.text clean_summary, size: 12, color: '333333', leading: 8
     pdf.move_down(20)
   end
 
   # Task 6.4: 関連ワードセクションの PDF レンダリング
-  def render_related_keywords(pdf, related_clusters)
-    pdf.text '関連ワード', size: 18, style: :bold
-    pdf.move_down(10)
+  def add_related_keywords(pdf, related_clusters)
+    pdf.text '関連トピック', size: 18, style: :bold, color: '1a1a1a'
+    pdf.move_down(8)
 
-    related_clusters.each do |cluster|
+    # 区切り線
+    pdf.stroke_color 'CCCCCC'
+    pdf.stroke_horizontal_line(0, pdf.bounds.width)
+    pdf.stroke_color '000000'
+    pdf.move_down(12)
+
+    related_clusters.each_with_index do |cluster, idx|
       main_topic = cluster['main_topic'] || cluster[:main_topic]
       related_words = cluster['related_words'] || cluster[:related_words] || []
 
-      words_text = related_words.join(', ')
-      pdf.text "• #{main_topic}: #{words_text}", size: 11
+      # クラスタ番号とトピック
+      pdf.text "#{idx + 1}. #{main_topic}", size: 13, style: :bold, color: '0066CC'
+      pdf.move_down(6)
+
+      # 関連ワード
+      words_text = related_words.join(' • ')
+      pdf.text words_text, size: 11, color: '666666', leading: 7
+      pdf.move_down(10)
     end
 
-    pdf.move_down(20)
+    pdf.move_down(10)
   end
 
   # Task 6.5: 考察セクションの PDF レンダリング
-  def render_analysis(pdf, analysis)
-    pdf.text '今週の考察', size: 18, style: :bold
-    pdf.move_down(10)
-    pdf.text analysis, size: 11
+  def add_analysis(pdf, analysis)
+    pdf.text '考察・インサイト', size: 18, style: :bold, color: '1a1a1a'
+    pdf.move_down(8)
+
+    # 区切り線
+    pdf.stroke_color 'CCCCCC'
+    pdf.stroke_horizontal_line(0, pdf.bounds.width)
+    pdf.stroke_color '000000'
+    pdf.move_down(12)
+
+    # Markdown フォーマットを削除
+    clean_analysis = strip_markdown(analysis)
+    pdf.text clean_analysis, size: 12, color: '333333', leading: 8
     pdf.move_down(20)
+  end
+
+  # 目次の追加
+  def add_table_of_contents(pdf, bookmarks)
+    pdf.text '目次', size: 18, style: :bold, color: '1a1a1a'
+    pdf.move_down(8)
+
+    pdf.stroke_color 'CCCCCC'
+    pdf.stroke_horizontal_line(0, pdf.bounds.width)
+    pdf.stroke_color '000000'
+    pdf.move_down(12)
+
+    bookmarks.each_with_index do |bookmark, idx|
+      title = bookmark['title'] || '（タイトルなし）'
+      truncated_title = title.length > 70 ? title[0..67] + '...' : title
+      pdf.text "#{idx + 1}. #{truncated_title}", size: 11, color: '0066CC', leading: 8
+    end
+  end
+
+  # ページ番号（フッター）の追加
+  def add_page_numbers(pdf)
+    pdf.number_pages "<page>/<total>", { at: [pdf.bounds.right - 100, 20], align: :right, size: 10, color: '999999' }
   end
 
   # Task 6.6: ブックマーク詳細セクションのメモリ効率的なレンダリング
@@ -194,7 +289,13 @@ class KeywordPDFGenerator
     return if bookmarks.empty?
 
     # セクションヘッダー
-    pdf.text 'ブックマーク詳細', size: 18, style: :bold
+    pdf.text 'ブックマーク詳細', size: 18, style: :bold, color: '1a1a1a'
+    pdf.move_down(8)
+
+    # 区切り線
+    pdf.stroke_color 'CCCCCC'
+    pdf.stroke_horizontal_line(0, pdf.bounds.width)
+    pdf.stroke_color '000000'
     pdf.move_down(15)
 
     # Task 6.6: ブックマークを 50 件単位のチャンクで処理
@@ -219,7 +320,7 @@ class KeywordPDFGenerator
 
   # ブックマーク詳細を週次レポート形式でレンダリング
   def render_bookmark_detail(pdf, bookmark, number, total)
-    pdf.move_down(8)
+    pdf.move_down(10)
 
     title = bookmark['title'] || '（タイトルなし）'
     url = bookmark['url'] || bookmark['link'] || ''
@@ -228,57 +329,70 @@ class KeywordPDFGenerator
     summary = bookmark['summary'] || nil
 
     # タイトルと番号
-    pdf.text "#{number}/#{total}. #{title}", size: 13, style: :bold
+    pdf.text "#{number}/#{total}. #{title}", size: 15, style: :bold, color: '1a1a1a'
     pdf.move_down(10)
 
     # 登録日
-    pdf.text "登録日: #{created}", size: 9, color: '666666'
+    created_date = created.is_a?(String) ? created.split('T').first : created
+    pdf.text "登録日: #{created_date}", size: 11, color: '999999'
     pdf.move_down(5)
 
     # URL
-    pdf.text "URL:", size: 9, color: '666666'
-    pdf.indent(10) do
+    pdf.text "URL:", size: 11, style: :bold, color: '666666'
+    pdf.indent(15) do
       if url.length > 80
-        pdf.text url, size: 8, color: '0066CC'
+        pdf.text url, size: 10, color: '0066CC', overflow: :shrink_to_fit
       else
-        pdf.text url, size: 9, color: '0066CC'
+        pdf.text url, size: 11, color: '0066CC'
       end
     end
     pdf.move_down(10)
 
     # タグ
     if tags.any?
-      tags_text = tags.map { |tag| "##{tag}" }.join(' ')
-      pdf.text "タグ: #{tags_text}", size: 9, color: '888888'
+      tags_text = tags.map { |tag| "##{tag}" }.join('  ')
+      pdf.text tags_text, size: 11, color: '0099BB'
       pdf.move_down(10)
     end
 
     # 要約（本文サマリー）
-    if summary && summary != '' && summary != '（サマリー未取得）'
-      pdf.text "📝 要約", size: 12, style: :bold
+    if summary && summary.to_s.strip.length > 10 && summary != '（サマリー未取得）' && summary != 'summary unavailable'
+      pdf.text "本文サマリー:", size: 13, style: :bold, color: '1a1a1a'
       pdf.move_down(8)
 
-      pdf.stroke_color 'CCCCCC'
-      pdf.stroke_bounds do
-        pdf.pad(10) do
-          lines = summary.split("\n").reject(&:empty?)
-          lines.each do |line|
-            if line.start_with?('- ')
-              pdf.text line, size: 10, leading: 4
-              pdf.move_down(4)
-            else
-              pdf.text "• #{line}", size: 10, leading: 4
-              pdf.move_down(4)
-            end
+      # 要約テキストを整形して表示
+      lines = summary.split("\n").reject(&:empty?).first(15)  # 最初の15行のみ
+
+      # 背景色付きボックス（実際のコンテンツに合わせたサイズ）
+      box_height = lines.length * 9 + 20
+      pdf.fill_color 'F5F5F5'
+      pdf.fill_rectangle([pdf.bounds.left, pdf.cursor], pdf.bounds.width, box_height)
+      pdf.fill_color '000000'
+
+      # インデント付きで要約テキストを表示
+      pdf.indent(10) do
+        pdf.move_down(10)
+        lines.each do |line|
+          truncated_line = line.length > 100 ? line[0..97] + '...' : line
+          if line.start_with?('- ') || line.start_with?('•')
+            pdf.text truncated_line, size: 11, color: '333333', leading: 7
+          else
+            pdf.text "• #{truncated_line}", size: 11, color: '333333', leading: 7
           end
         end
       end
-      pdf.stroke_color '000000'
+
+      pdf.move_down(box_height)
     else
-      pdf.text "要約なし", size: 10, color: 'AAAAAA', style: :italic
+      pdf.text "本文サマリー: （取得未定）", size: 12, color: 'AAAAAA', style: :italic
+      pdf.move_down(8)
     end
 
-    pdf.move_down(15)
+    # 区切り線
+    pdf.stroke_color 'EEEEEE'
+    pdf.stroke_horizontal_line(0, pdf.bounds.width)
+    pdf.stroke_color '000000'
+    pdf.move_down(5)
   end
 
   # Task 6.6: ブックマークをチャンク分割

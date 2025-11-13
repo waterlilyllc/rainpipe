@@ -160,6 +160,34 @@ class GPTContentGenerator
     nil
   end
 
+  # ブックマークの本文コンテンツをサマリー化（公開メソッド）
+  # @param content [String] Gatherlyから取得した本文内容
+  # @return [String] サマリー化されたテキスト
+  def generate_bookmark_summary(content)
+    return '' if content.nil? || content.to_s.strip.empty?
+
+    # 長すぎるテキストは最初の3000文字に制限
+    truncated_content = content.to_s.length > 3000 ? content[0..3000] + '...' : content.to_s
+
+    prompt = <<~PROMPT
+      以下の記事内容を、箇条書きで300文字程度の簡潔なサマリーに要約してください。日本語で出力してください。
+
+      ---
+      #{truncated_content}
+      ---
+
+      要約:
+    PROMPT
+
+    result = retry_with_backoff do
+      call_gpt_api(prompt)
+    end
+
+    raise "ブックマークサマリー生成失敗" unless result
+
+    result.strip
+  end
+
   private
 
   # ブックマークをプロンプト用に整形
@@ -200,7 +228,7 @@ class GPTContentGenerator
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = (uri.scheme == 'https')
     http.open_timeout = 10
-    http.read_timeout = 30
+    http.read_timeout = 60
 
     response = http.request(request)
 
