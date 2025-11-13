@@ -53,10 +53,13 @@ class GatherlyResultMerger
 
       items.each do |item|
         # URL でブックマークをマッチング
-        bookmark = merged_bookmarks.find { |b| b['url'] == item[:url] || b['url'] == item['url'] }
+        external_id = item[:external_id] || item['external_id']
+        bookmark = merged_bookmarks.find { |b| b['url'] == external_id || b['link'] == external_id }
 
         if bookmark
-          content = item[:content] || item['content']
+          # Note: content は item[:body][:content] に nested されている
+          body = item[:body] || item['body'] || {}
+          content = body[:content] || body['content']
 
           if content && content.to_s.strip.length > 0
             # Task 4.3: 取得した content を対応するブックマークの summary フィールドに統合

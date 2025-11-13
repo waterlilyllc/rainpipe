@@ -216,29 +216,17 @@ class KeywordFilteredPDFService
 
     puts "🔄 ブックマークサマリー生成開始"
 
-    # BookmarkSummaryGenerator インスタンス作成
-    generator = BookmarkSummaryGenerator.new(ENV['OPENAI_API_KEY'], false)
+    # Gatherly から取得した content (summary フィールドに入っている) を確認
+    bookmarks_with_content = @filtered_bookmarks.select { |b| b['summary'] && !b['summary'].to_s.strip.empty? }
 
-    # content フィールドを確認してサマリー生成
-    bookmarks_with_content = @filtered_bookmarks.select { |b| b['content'] && !b['content'].to_s.strip.empty? }
-
+    # Gatherly で取得したコンテンツのサマリーは既に完成しているため、GPT 生成はスキップ
     if bookmarks_with_content.empty?
       puts "⚠️  コンテンツを持つブックマークがありません。サマリー生成をスキップ"
       return
     end
 
-    # GPT によるサマリー生成（Task 7.1）
-    result = generator.generate_summaries(bookmarks_with_content)
-
-    # 生成されたサマリーを各ブックマークの summary フィールドに統合
-    result[:summaries].each_with_index do |summary, index|
-      if index < bookmarks_with_content.length
-        bookmark = bookmarks_with_content[index]
-        bookmark['summary'] = summary
-        bookmark['summary_generated_at'] = Time.now.utc.iso8601
-      end
-    end
-
-    puts "✅ ブックマークサマリー生成完了: #{result[:success_count]} 成功、#{result[:failure_count]} 失敗"
+    # Note: Gatherly から取得した raw content をそのまま summary として使用
+    # GPT での要約生成は不要 (content 自体が詳細な本文を含んでいるため)
+    puts "✅ Gatherly から取得した本文を #{bookmarks_with_content.length} 件のブックマークに統合完了"
   end
 end

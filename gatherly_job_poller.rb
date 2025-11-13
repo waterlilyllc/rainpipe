@@ -30,15 +30,16 @@ class GatherlyJobPoller
 
     completed_jobs = []
     timed_out_jobs = []
-    start_time = Time.now
+    overall_start_time = Time.now
 
     job_uuids.each do |job_uuid|
-      puts "⏳ ジョブ #{job_uuid} のポーリングを開始（タイムアウト: #{@timeout_seconds} 秒）"
+      puts "⏳ ジョブ #{job_uuid} のポーリングを開始（ジョブ個別タイムアウト: #{@timeout_seconds} 秒）"
 
       job_completed = false
       poll_count = 0
+      job_start_time = Time.now
 
-      while Time.now - start_time < @timeout_seconds
+      while Time.now - job_start_time < @timeout_seconds
         poll_count += 1
 
         # ジョブ状態を確認（GatherlyClient.get_job_status）
@@ -56,7 +57,7 @@ class GatherlyJobPoller
           puts "⏳ ジョブ #{job_uuid} ステータス: #{current_status}（ポーリング #{poll_count} 回）"
         end
 
-        # 2-3 秒間隔でポーリング
+        # 2 秒間隔でポーリング
         sleep(@poll_interval_seconds)
       end
 
@@ -67,6 +68,8 @@ class GatherlyJobPoller
       end
     end
 
+    overall_elapsed = (Time.now - overall_start_time).round(2)
+
     {
       total_jobs: job_uuids.length,
       completed: completed_jobs,
@@ -74,7 +77,7 @@ class GatherlyJobPoller
       polling_results: {
         completed_count: completed_jobs.length,
         timed_out_count: timed_out_jobs.length,
-        elapsed_seconds: (Time.now - start_time).round(2)
+        elapsed_seconds: overall_elapsed
       }
     }
   end

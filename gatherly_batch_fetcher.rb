@@ -40,7 +40,7 @@ class GatherlyBatchFetcher
     created_jobs = []
 
     batches.each_with_index do |batch, index|
-      urls = batch.map { |b| b['url'] }.compact
+      urls = batch.map { |b| b['url'] || b['link'] }.compact
 
       next if urls.empty?
 
