@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rainpipe - キーワード PDF 生成</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .filtered-pdf-form {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #495057;
+    }
+
+    .form-group textarea,
+    .form-group input[type="text"],
+    .form-group input[type="date"] {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .form-group textarea:focus,
+    .form-group input[type="text"]:focus,
+    .form-group input[type="date"]:focus {
+      outline: none;
+      border-color: #495057;
+      box-shadow: 0 0 0 3px rgba(73, 80, 87, 0.1);
+    }
+
+    .form-group.checkbox {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group.checkbox input[type="checkbox"] {
+      width: auto;
+      margin-right: 0.5rem;
+      cursor: pointer;
+    }
+
+    .form-group.checkbox label {
+      margin-bottom: 0;
+      margin-right: 0.5rem;
+      cursor: pointer;
+    }
+
+    .date-range-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .submit-btn {
+      background-color: #495057;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      width: 100%;
+    }
+
+    .submit-btn:hover {
+      background-color: #343a40;
+    }
+
+    .error-message {
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 1.5rem;
+      border: 1px solid #f5c6cb;
+    }
+
+    .success-message {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 1.5rem;
+      border: 1px solid #c3e6cb;
+    }
+
+    .info-text {
+      font-size: 0.9rem;
+      color: #6c757d;
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌧️ Rainpipe</h1>
+    <p>キーワード別 PDF 生成</p>
+  </header>
+
+  <nav class="main-nav">
+    <div class="nav-links">
+      <a href="/" class="nav-button">🏠 ホーム</a>
+      <a href="/weekly" class="nav-button">📅 週間表示</a>
+      <a href="/monthly" class="nav-button">📆 月間表示</a>
+      <a href="/search" class="nav-button">🔍 検索</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="filtered-pdf-form">
+      <h2>🔍 キーワード別 PDF を生成</h2>
+
+      <% if @error_message %>
+        <div class="error-message">
+          ❌ <%= @error_message %>
+        </div>
+      <% end %>
+
+      <% if @success_message %>
+        <div class="success-message">
+          ✅ <%= @success_message %>
+        </div>
+      <% end %>
+
+      <form action="/filtered_pdf/generate" method="POST">
+        <!-- キーワード入力 -->
+        <div class="form-group">
+          <label for="keywords">キーワード *</label>
+          <textarea
+            id="keywords"
+            name="keywords"
+            placeholder="キーワードを入力（複数の場合は改行または , で区切る）"
+            required><%= @keywords %></textarea>
+          <p class="info-text">例: Claude, 機械学習, Ruby</p>
+        </div>
+
+        <!-- 日付範囲 -->
+        <div class="form-group">
+          <label>期間（デフォルト: 過去3ヶ月）</label>
+          <div class="date-range-group">
+            <div>
+              <label for="date_start" style="font-size: 0.9rem; display: inline;">開始日</label>
+              <input
+                type="date"
+                id="date_start"
+                name="date_start"
+                value="<%= @date_start %>">
+            </div>
+            <div>
+              <label for="date_end" style="font-size: 0.9rem; display: inline;">終了日</label>
+              <input
+                type="date"
+                id="date_end"
+                name="date_end"
+                value="<%= @date_end %>">
+            </div>
+          </div>
+          <p class="info-text">指定しない場合はデフォルト範囲が使用されます</p>
+        </div>
+
+        <!-- Kindle 送信 -->
+        <div class="form-group checkbox">
+          <input
+            type="checkbox"
+            id="send_to_kindle"
+            name="send_to_kindle"
+            value="true"
+            <%= 'checked' if @send_to_kindle %>>
+          <label for="send_to_kindle">Kindle に送信する</label>
+        </div>
+
+        <!-- 送信ボタン -->
+        <button type="submit" class="submit-btn">📄 PDF を生成</button>
+      </form>
+
+      <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #dee2e6;">
+        <h3>使い方</h3>
+        <ul style="margin-left: 1rem; color: #6c757d; font-size: 0.95rem;">
+          <li>キーワードを1つ以上入力してください</li>
+          <li>複数キーワードを入力した場合、いずれかに合致するブックマークが対象です（OR 条件）</li>
+          <li>日付範囲を指定しない場合、過去3ヶ月のブックマークが対象です</li>
+          <li>Kindle に送信する場合、あらかじめ Kindle メールアドレスを設定してください</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p><a href="/">ホーム</a> | <a href="/weekly">週間表示</a> | <a href="/monthly">月間表示</a> | <a href="/search">検索</a></p>
+  </footer>
+
+  <script>
+    // デフォルト日付を設定
+    document.addEventListener('DOMContentLoaded', function() {
+      const dateStartInput = document.getElementById('date_start');
+      const dateEndInput = document.getElementById('date_end');
+
+      // 値が入っていなければデフォルト値を設定
+      if (!dateStartInput.value) {
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        dateStartInput.value = threeMonthsAgo.toISOString().split('T')[0];
+      }
+
+      if (!dateEndInput.value) {
+        const today = new Date();
+        dateEndInput.value = today.toISOString().split('T')[0];
+      }
+    });
+
+    // フォーム送信時の基本バリデーション
+    document.querySelector('form').addEventListener('submit', function(e) {
+      const keywords = document.getElementById('keywords').value.trim();
+
+      if (!keywords) {
+        e.preventDefault();
+        alert('キーワードを入力してください');
+        return false;
+      }
+
+      const dateStart = document.getElementById('date_start').value;
+      const dateEnd = document.getElementById('date_end').value;
+
+      if (dateStart && dateEnd && dateStart > dateEnd) {
+        e.preventDefault();
+        alert('開始日は終了日より前である必要があります');
+        return false;
+      }
+    });
+  </script>
+</body>
+</html>
