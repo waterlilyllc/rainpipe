@@ -191,22 +191,20 @@ class KeywordPDFGenerator
 
   # Task 6.6: ブックマーク詳細セクションのメモリ効率的なレンダリング
   def render_bookmarks(pdf, bookmarks)
-    pdf.text 'ブックマーク詳細', size: 18, style: :bold
-    pdf.move_down(10)
-
     return if bookmarks.empty?
+
+    # セクションヘッダー
+    pdf.text 'ブックマーク詳細', size: 18, style: :bold
+    pdf.move_down(15)
 
     # Task 6.6: ブックマークを 50 件単位のチャンクで処理
     chunk_bookmarks(bookmarks).each_with_index do |chunk, chunk_index|
-      chunk.each do |bookmark|
-        title = bookmark['title'] || '（タイトルなし）'
-        url = bookmark['url'] || bookmark['link'] || '（URL なし）'
-        summary = bookmark['summary'] || '（サマリー未取得）'
+      chunk.each_with_index do |bookmark, idx|
+        number = (chunk_index * CHUNK_SIZE) + idx + 1
+        total = bookmarks.length
 
-        pdf.text "■ #{title}", size: 10, style: :bold
-        pdf.text "URL: #{url}", size: 9
-        pdf.text "概要: #{summary}", size: 9
-        pdf.move_down(10)
+        # ブックマーク詳細セクション
+        render_bookmark_detail(pdf, bookmark, number, total)
 
         # ページが埋まったら新ページへ
         if pdf.cursor < 100
@@ -217,6 +215,70 @@ class KeywordPDFGenerator
       # Task 6.6: GC ヒント（50 件ごと）
       trigger_gc if (chunk_index + 1) % 1 == 0
     end
+  end
+
+  # ブックマーク詳細を週次レポート形式でレンダリング
+  def render_bookmark_detail(pdf, bookmark, number, total)
+    pdf.move_down(8)
+
+    title = bookmark['title'] || '（タイトルなし）'
+    url = bookmark['url'] || bookmark['link'] || ''
+    created = bookmark['created'] || bookmark['created_at'] || '不明'
+    tags = bookmark['tags'] || []
+    summary = bookmark['summary'] || nil
+
+    # タイトルと番号
+    pdf.text "#{number}/#{total}. #{title}", size: 13, style: :bold
+    pdf.move_down(10)
+
+    # 登録日
+    pdf.text "登録日: #{created}", size: 9, color: '666666'
+    pdf.move_down(5)
+
+    # URL
+    pdf.text "URL:", size: 9, color: '666666'
+    pdf.indent(10) do
+      if url.length > 80
+        pdf.text url, size: 8, color: '0066CC'
+      else
+        pdf.text url, size: 9, color: '0066CC'
+      end
+    end
+    pdf.move_down(10)
+
+    # タグ
+    if tags.any?
+      tags_text = tags.map { |tag| "##{tag}" }.join(' ')
+      pdf.text "タグ: #{tags_text}", size: 9, color: '888888'
+      pdf.move_down(10)
+    end
+
+    # 要約（本文サマリー）
+    if summary && summary != '' && summary != '（サマリー未取得）'
+      pdf.text "📝 要約", size: 12, style: :bold
+      pdf.move_down(8)
+
+      pdf.stroke_color 'CCCCCC'
+      pdf.stroke_bounds do
+        pdf.pad(10) do
+          lines = summary.split("\n").reject(&:empty?)
+          lines.each do |line|
+            if line.start_with?('- ')
+              pdf.text line, size: 10, leading: 4
+              pdf.move_down(4)
+            else
+              pdf.text "• #{line}", size: 10, leading: 4
+              pdf.move_down(4)
+            end
+          end
+        end
+      end
+      pdf.stroke_color '000000'
+    else
+      pdf.text "要約なし", size: 10, color: 'AAAAAA', style: :italic
+    end
+
+    pdf.move_down(15)
   end
 
   # Task 6.6: ブックマークをチャンク分割
