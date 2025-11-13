@@ -13,6 +13,9 @@ require 'date'
 require_relative 'raindrop_client'
 require_relative 'content_checker'
 require_relative 'bookmark_summary_generator'
+require_relative 'gatherly_batch_fetcher'
+require_relative 'gatherly_job_poller'
+require_relative 'gatherly_result_merger'
 
 class KeywordFilteredPDFService
   # 初期化
@@ -49,6 +52,9 @@ class KeywordFilteredPDFService
 
     # Task 3.3: ContentChecker でサマリー未取得を検出
     detect_missing_summaries
+
+    # Task 4.1-4.3: Gatherly で本文取得
+    fetch_bookmarks_content_from_gatherly
 
     # Task 7.1: Gatherly で取得した content から GPT でサマリーを生成
     generate_bookmark_summaries
@@ -169,6 +175,40 @@ class KeywordFilteredPDFService
   # Gatherly で取得した content から GPT でサマリーを生成
   # @return [void]
   private
+
+  # Task 4.1-4.3: Gatherly で本文取得
+  def fetch_bookmarks_content_from_gatherly
+    return if @bookmarks_without_summary.empty?
+
+    puts "🌐 Gatherly API で本文取得開始"
+
+    # Task 4.1: バッチ本文取得ジョブ作成
+    batch_fetcher = GatherlyBatchFetcher.new
+    job_ids = batch_fetcher.create_crawl_jobs(@bookmarks_without_summary)
+
+    return if job_ids.empty?
+
+    puts "📝 ジョブ数: #{job_ids.length}"
+
+    # Task 4.2: ジョブ完了待機
+    job_poller = GatherlyJobPoller.new
+    completed_results = []
+
+    job_ids.each do |job_id|
+      result = job_poller.poll_job_status(job_id, timeout: 300)
+      if result[:completed]
+        completed_results << result
+      else
+        puts "⏱️  ジョブがタイムアウト: #{job_id}"
+      end
+    end
+
+    # Task 4.3: 結果をマージ
+    merger = GatherlyResultMerger.new
+    merger.merge_results(@bookmarks_without_summary, completed_results)
+
+    puts "✅ Gatherly 本文取得完了: #{completed_results.length}/#{job_ids.length} 成功"
+  end
 
   def generate_bookmark_summaries
     return if @filtered_bookmarks.empty?
