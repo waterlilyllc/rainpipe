@@ -252,31 +252,35 @@ All 7 requirements (1, 2, 2-1, 3, 3-1, 3-2, 3-3, 4, 5, 6, 7) fully covered
 
 ## ファイル出力と Kindle 送信
 
-- [ ] 8. ファイル出力と配布機能を実装
-- [ ] 8.1 (P) /filtered_pdf/generate POST ルートで PDF 生成リクエスト処理
+- [x] 8. ファイル出力と配布機能を実装
+- [x] 8.1 (P) /filtered_pdf/generate POST ルートで PDF 生成リクエスト処理
   - フォーム param から keywords、date_start、date_end、send_to_kindle を取得
   - KeywordFilteredPDFService インスタンス作成 + execute 呼び出し
   - 生成 status を確認（success/error）
   - _Requirements: 6_
+  - ✅ **実装完了**: app.rb POST /filtered_pdf/generate ルート（6/6 テスト成功）
 
-- [ ] 8.2 (P) PDF ダウンロードレスポンス実装
+- [x] 8.2 (P) PDF ダウンロードレスポンス実装
   - send_to_kindle が false 時、PDF ファイルをブラウザで download
   - Sinatra send_file で ファイルパス指定
   - Content-Type: application/pdf
   - attachment header で強制 download（Content-Disposition: attachment; filename="..."）
   - _Requirements: 4_
+  - ✅ **実装完了**: app.rb send_file を使用した PDF ダウンロード
 
-- [ ] 8.3 (P) Kindle メール送信機能統合
+- [x] 8.3 (P) Kindle メール送信機能統合
   - send_to_kindle が true 時、KindleEmailSender を call
   - KindleEmailSender.send_pdf(pdf_path) で PDF 送信
   - 成功時：HTML レスポンスで「Kindle に送信しました」確認メッセージ表示
   - 失敗時：エラーメッセージを HTML で表示（「メール送信に失敗しました：...」）
   - _Requirements: 4_
+  - ✅ **実装完了**: app.rb Kindle メール送信機能統合
 
-- [ ] 8.4 (P) エラーレスポンス処理
+- [x] 8.4 (P) エラーレスポンス処理
   - Service が error status 返却時、HTML error message を返す
   - エラー理由を含める（「フィルタに合致するブックマークが見つかりません」など）
   - _Requirements: 6_
+  - ✅ **実装完了**: app.rb 包括的なエラーハンドリング
 
 ---
 

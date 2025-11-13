@@ -11,6 +11,10 @@ require_relative 'archive_manager'
 require_relative 'weekly_summary_generator'
 require_relative 'bookmark_content_manager'
 require_relative 'form_validator'
+require_relative 'keyword_filtered_pdf_service'
+require_relative 'gpt_content_generator'
+require_relative 'keyword_pdf_generator'
+require_relative 'kindle_email_sender'
 
 set :port, 4567
 set :bind, '0.0.0.0'
@@ -441,14 +445,100 @@ post '/filtered_pdf/generate' do
     return erb :filtered_pdf
   end
 
-  # ここから先は Task 3 以降で実装（一時的に成功メッセージを返す）
-  @keywords = keywords
-  @date_start = date_start
-  @date_end = date_end
-  @send_to_kindle = send_to_kindle
-  @error_message = nil
-  @success_message = "✅ 検証成功！PDF 生成処理はまだ実装中です。"
+  # Task 8.1: KeywordFilteredPDFService を使用して PDF 生成リクエスト処理
+  begin
+    service = KeywordFilteredPDFService.new(
+      keywords: keywords,
+      date_start: date_start,
+      date_end: date_end
+    )
 
-  erb :filtered_pdf
+    result = service.execute
+
+    # Task 8.4: エラー時の処理
+    if result[:status] == 'error'
+      @keywords = keywords
+      @date_start = date_start
+      @date_end = date_end
+      @send_to_kindle = send_to_kindle
+      @error_message = result[:error] || "PDF 生成に失敗しました"
+      @success_message = nil
+      return erb :filtered_pdf
+    end
+
+    # PDF ファイル生成（Task 6）
+    bookmarks = result[:bookmarks]
+    if bookmarks.empty?
+      @keywords = keywords
+      @date_start = date_start
+      @date_end = date_end
+      @send_to_kindle = send_to_kindle
+      @error_message = "フィルタに合致するブックマークが見つかりません"
+      @success_message = nil
+      return erb :filtered_pdf
+    end
+
+    # GPT コンテンツ生成（Task 5）
+    gpt_generator = GPTContentGenerator.new(ENV['OPENAI_API_KEY'], false)
+    summary_result = gpt_generator.generate_overall_summary(bookmarks, keywords)
+    keywords_result = gpt_generator.extract_related_keywords(bookmarks)
+    analysis_result = gpt_generator.generate_analysis(bookmarks, keywords)
+
+    # PDF 生成（Task 6）
+    pdf_content = {
+      summary: summary_result[:summary],
+      related_clusters: keywords_result[:related_clusters],
+      analysis: analysis_result[:analysis],
+      bookmarks: bookmarks,
+      keywords: keywords,
+      date_range: result[:date_range]
+    }
+
+    pdf_generator = KeywordPDFGenerator.new
+    output_path = File.join('data', "filtered_pdf_#{Time.now.utc.strftime('%Y%m%d_%H%M%S')}_#{keywords.gsub(/[^a-zA-Z0-9]/, '_')}.pdf")
+    pdf_result = pdf_generator.generate(pdf_content, output_path)
+
+    # Task 8.2 & 8.3: ダウンロード または Kindle 送信
+    if send_to_kindle
+      # Task 8.3: Kindle メール送信
+      begin
+        email_sender = KindleEmailSender.new
+        email_sender.send_pdf(pdf_result[:pdf_path], nil)
+
+        @keywords = keywords
+        @date_start = date_start
+        @date_end = date_end
+        @send_to_kindle = send_to_kindle
+        @error_message = nil
+        @success_message = "✅ Kindle に PDF を送信しました！"
+        erb :filtered_pdf
+      rescue => e
+        @keywords = keywords
+        @date_start = date_start
+        @date_end = date_end
+        @send_to_kindle = send_to_kindle
+        @error_message = "メール送信に失敗しました: #{e.message}"
+        @success_message = nil
+        erb :filtered_pdf
+      end
+    else
+      # Task 8.2: PDF ダウンロード
+      send_file(
+        pdf_result[:pdf_path],
+        type: 'application/pdf',
+        disposition: 'attachment',
+        filename: File.basename(pdf_result[:pdf_path])
+      )
+    end
+  rescue => e
+    # Task 8.4: 予期しないエラーのハンドリング
+    @keywords = keywords
+    @date_start = date_start
+    @date_end = date_end
+    @send_to_kindle = send_to_kindle
+    @error_message = "エラーが発生しました: #{e.message}"
+    @success_message = nil
+    erb :filtered_pdf
+  end
 end
 
