@@ -42,4 +42,4 @@ Kiro-style Spec Driven Development implementation on AI-DLC (AI Development Life
 - Load entire `.kiro/steering/` as project memory
 - Default files: `product.md`, `tech.md`, `structure.md`
 - Custom files are supported (managed via `/kiro:steering-custom`)
-
+- ### 以降、markdownが素のまま出てるんだが、太文字とかもアスタリスクのままだし。pdf確認して

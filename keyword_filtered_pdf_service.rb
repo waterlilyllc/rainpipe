@@ -68,6 +68,33 @@ class KeywordFilteredPDFService
     }
   end
 
+  # Python PDF生成用にJSON形式でデータを出力
+  # @param content [Hash] GPT生成済みのサマリー等を含むコンテンツ
+  # @param output_json [String] 出力JSONパス
+  def export_for_python_pdf(content, output_json)
+    export_data = {
+      keywords: @normalized_keywords.join(', '),
+      date_range: {
+        start: @date_range[:start],
+        end: @date_range[:end]
+      },
+      summary: content[:overall_summary] || content[:summary],
+      overall_summary: content[:overall_summary],
+      related_clusters: content[:related_clusters] || [],
+      analysis: content[:analysis],
+      bookmarks: @filtered_bookmarks.map { |b|
+        {
+          title: b['title'],
+          url: b['url'],
+          summary: b['summary']
+        }
+      }
+    }
+
+    File.write(output_json, JSON.pretty_generate(export_data))
+    puts "💾 JSON 出力: #{output_json}"
+  end
+
   # エラー結果を返す
   def error_result
     {
