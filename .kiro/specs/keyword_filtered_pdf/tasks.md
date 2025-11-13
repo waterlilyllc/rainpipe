@@ -286,33 +286,38 @@ All 7 requirements (1, 2, 2-1, 3, 3-1, 3-2, 3-3, 4, 5, 6, 7) fully covered
 
 ## 生成履歴追跡と並行実行制限
 
-- [ ] 9. 生成履歴 DB 記録と並行実行制限を実装
-- [ ] 9.1 (P) PDF 生成前に DB で in-progress ステータスチェック
+- [x] 9. 生成履歴 DB 記録と並行実行制限を実装
+- [x] 9.1 (P) PDF 生成前に DB で in-progress ステータスチェック
   - keyword_pdf_generations table から status='processing' レコードを検索
   - IN-progress レコードが存在時：warning message 表示（「PDF 生成処理が進行中です。数分お待ちください」）
   - _Requirements: 6_
+  - ✅ **実装完了**: pdf_generation_history.rb + app.rb（12/12 テスト成功）
 
-- [ ] 9.2 (P) 生成開始時に DB record 作成（uuid 生成、status=processing）
+- [x] 9.2 (P) 生成開始時に DB record 作成（uuid 生成、status=processing）
   - SecureRandom.uuid で一意 ID 生成
   - keywords（カンマ区切り）、date_range_start、date_range_end、bookmark_count を記録
   - status='processing'、created_at=UTC now、updated_at=UTC now
   - _Requirements: 6_
+  - ✅ **実装完了**: PDFGenerationHistory.create_processing_record()
 
-- [ ] 9.3 (P) PDF 完成時に DB record を status=completed に更新
+- [x] 9.3 (P) PDF 完成時に DB record を status=completed に更新
   - pdf_path を記録
   - total_duration_ms を計算（all sub-step の duration sum）
   - updated_at を更新
   - _Requirements: 6_
+  - ✅ **実装完了**: PDFGenerationHistory.mark_completed()
 
-- [ ] 9.4 (P) エラー時に DB record を status=failed に更新
+- [x] 9.4 (P) エラー時に DB record を status=failed に更新
   - error_message に失敗理由を記録
   - updated_at を更新
   - _Requirements: 6_
+  - ✅ **実装完了**: PDFGenerationHistory.mark_failed()
 
-- [ ] 9.5 (P) /filtered_pdf/history GET ルート実装（生成履歴表示）
+- [x] 9.5 (P) /filtered_pdf/history GET ルート実装（生成履歴表示）
   - keyword_pdf_generations table から最新 20 件を取得（order by created_at DESC）
   - HTML table で表示：keywords、bookmark_count、status、created_at、total_duration_ms
   - _Requirements: 6_
+  - ✅ **実装完了**: GET /filtered_pdf/history + views/filtered_pdf_history.erb
 
 ---
 

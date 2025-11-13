@@ -15,6 +15,7 @@ require_relative 'keyword_filtered_pdf_service'
 require_relative 'gpt_content_generator'
 require_relative 'keyword_pdf_generator'
 require_relative 'kindle_email_sender'
+require_relative 'pdf_generation_history'
 
 set :port, 4567
 set :bind, '0.0.0.0'
@@ -424,6 +425,14 @@ get '/filtered_pdf' do
   erb :filtered_pdf
 end
 
+# Task 9.5: 生成履歴表示（GET /filtered_pdf/history）
+get '/filtered_pdf/history' do
+  history = PDFGenerationHistory.new('rainpipe.db')
+  @records = history.fetch_history(20)
+
+  erb :filtered_pdf_history
+end
+
 # キーワード別 PDF 生成リクエスト処理（Task 2.2 検証 + Task 8.1）
 post '/filtered_pdf/generate' do
   # フォーム入力値を取得
@@ -445,6 +454,18 @@ post '/filtered_pdf/generate' do
     return erb :filtered_pdf
   end
 
+  # Task 9.1: PDF 生成前に DB で in-progress ステータスチェック
+  history = PDFGenerationHistory.new('rainpipe.db')
+  if history.has_processing_record?
+    @keywords = keywords
+    @date_start = date_start
+    @date_end = date_end
+    @send_to_kindle = send_to_kindle
+    @error_message = history.get_processing_warning
+    @success_message = nil
+    return erb :filtered_pdf
+  end
+
   # Task 8.1: KeywordFilteredPDFService を使用して PDF 生成リクエスト処理
   begin
     service = KeywordFilteredPDFService.new(
@@ -455,8 +476,18 @@ post '/filtered_pdf/generate' do
 
     result = service.execute
 
+    # Task 9.2: 生成開始時に DB record 作成
+    pdf_uuid = history.create_processing_record(
+      keywords,
+      { start: date_start, end: date_end },
+      result[:bookmarks].length
+    )
+
     # Task 8.4: エラー時の処理
     if result[:status] == 'error'
+      # Task 9.4: エラー時に DB record を status=failed に更新
+      history.mark_failed(pdf_uuid, result[:error] || "PDF 生成に失敗しました")
+
       @keywords = keywords
       @date_start = date_start
       @date_end = date_end
@@ -469,6 +500,9 @@ post '/filtered_pdf/generate' do
     # PDF ファイル生成（Task 6）
     bookmarks = result[:bookmarks]
     if bookmarks.empty?
+      # Task 9.4: エラー時に DB record を status=failed に更新
+      history.mark_failed(pdf_uuid, "フィルタに合致するブックマークが見つかりません")
+
       @keywords = keywords
       @date_start = date_start
       @date_end = date_end
@@ -498,6 +532,10 @@ post '/filtered_pdf/generate' do
     output_path = File.join('data', "filtered_pdf_#{Time.now.utc.strftime('%Y%m%d_%H%M%S')}_#{keywords.gsub(/[^a-zA-Z0-9]/, '_')}.pdf")
     pdf_result = pdf_generator.generate(pdf_content, output_path)
 
+    # Task 9.3: PDF 完成時に DB record を status=completed に更新
+    total_duration = pdf_result[:duration_ms] + summary_result[:duration_ms] + keywords_result[:duration_ms] + analysis_result[:duration_ms]
+    history.mark_completed(pdf_uuid, pdf_result[:pdf_path], total_duration)
+
     # Task 8.2 & 8.3: ダウンロード または Kindle 送信
     if send_to_kindle
       # Task 8.3: Kindle メール送信
@@ -513,6 +551,9 @@ post '/filtered_pdf/generate' do
         @success_message = "✅ Kindle に PDF を送信しました！"
         erb :filtered_pdf
       rescue => e
+        # Task 9.4: メール送信失敗時に DB 更新
+        history.mark_failed(pdf_uuid, "メール送信に失敗: #{e.message}")
+
         @keywords = keywords
         @date_start = date_start
         @date_end = date_end
@@ -531,6 +572,11 @@ post '/filtered_pdf/generate' do
       )
     end
   rescue => e
+    # Task 9.4: 予期しないエラー時に DB record を status=failed に更新
+    if pdf_uuid
+      history.mark_failed(pdf_uuid, e.message)
+    end
+
     # Task 8.4: 予期しないエラーのハンドリング
     @keywords = keywords
     @date_start = date_start
