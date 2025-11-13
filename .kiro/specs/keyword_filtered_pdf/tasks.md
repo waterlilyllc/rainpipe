@@ -240,11 +240,13 @@ All 7 requirements (1, 2, 2-1, 3, 3-1, 3-2, 3-3, 4, 5, 6, 7) fully covered
 
 ## ブックマークサマリー生成（フィルタ済みセット向け）
 
-- [ ] 7. (P) フィルタ済みブックマークのサマリー生成を実装
+- [x] 7. (P) フィルタ済みブックマークのサマリー生成を実装
   - BookmarkContentManager または既存サマリー生成ロジックを活用
   - Gatherly で取得した content から，GPT でサマリーを生成
   - 完了後の content_summary フィールド更新
   - _Requirements: 2-1_
+  - ✅ **実装完了**: bookmark_summary_generator.rb（19/19 テスト成功）
+  - ✅ **統合完了**: KeywordFilteredPDFService に generate_bookmark_summaries メソッド追加
 
 ---
 

@@ -12,6 +12,7 @@
 require 'date'
 require_relative 'raindrop_client'
 require_relative 'content_checker'
+require_relative 'bookmark_summary_generator'
 
 class KeywordFilteredPDFService
   # 初期化
@@ -48,6 +49,9 @@ class KeywordFilteredPDFService
 
     # Task 3.3: ContentChecker でサマリー未取得を検出
     detect_missing_summaries
+
+    # Task 7.1: Gatherly で取得した content から GPT でサマリーを生成
+    generate_bookmark_summaries
 
     {
       status: 'success',
@@ -159,5 +163,41 @@ class KeywordFilteredPDFService
     else
       puts "✅ すべてのブックマークのサマリーが取得済み"
     end
+  end
+
+  # Task 7.1: フィルタ済みブックマークのサマリー生成
+  # Gatherly で取得した content から GPT でサマリーを生成
+  # @return [void]
+  private
+
+  def generate_bookmark_summaries
+    return if @filtered_bookmarks.empty?
+
+    puts "🔄 ブックマークサマリー生成開始"
+
+    # BookmarkSummaryGenerator インスタンス作成
+    generator = BookmarkSummaryGenerator.new(ENV['OPENAI_API_KEY'], false)
+
+    # content フィールドを確認してサマリー生成
+    bookmarks_with_content = @filtered_bookmarks.select { |b| b['content'] && !b['content'].to_s.strip.empty? }
+
+    if bookmarks_with_content.empty?
+      puts "⚠️  コンテンツを持つブックマークがありません。サマリー生成をスキップ"
+      return
+    end
+
+    # GPT によるサマリー生成（Task 7.1）
+    result = generator.generate_summaries(bookmarks_with_content)
+
+    # 生成されたサマリーを各ブックマークの summary フィールドに統合
+    result[:summaries].each_with_index do |summary, index|
+      if index < bookmarks_with_content.length
+        bookmark = bookmarks_with_content[index]
+        bookmark['summary'] = summary
+        bookmark['summary_generated_at'] = Time.now.utc.iso8601
+      end
+    end
+
+    puts "✅ ブックマークサマリー生成完了: #{result[:success_count]} 成功、#{result[:failure_count]} 失敗"
   end
 end
