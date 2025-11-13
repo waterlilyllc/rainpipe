@@ -513,10 +513,23 @@ post '/filtered_pdf/generate' do
     end
 
     # GPT コンテンツ生成（Task 5）
-    gpt_generator = GPTContentGenerator.new(ENV['OPENAI_API_KEY'], false)
-    summary_result = gpt_generator.generate_overall_summary(bookmarks, keywords)
-    keywords_result = gpt_generator.extract_related_keywords(bookmarks)
-    analysis_result = gpt_generator.generate_analysis(bookmarks, keywords)
+    begin
+      gpt_generator = GPTContentGenerator.new(ENV['OPENAI_API_KEY'], false)
+      summary_result = gpt_generator.generate_overall_summary(bookmarks, keywords)
+      keywords_result = gpt_generator.extract_related_keywords(bookmarks)
+      analysis_result = gpt_generator.generate_analysis(bookmarks, keywords)
+    rescue => e
+      # Task 9.4: GPT 生成失敗時に DB record を status=failed に更新
+      history.mark_failed(pdf_uuid, "GPT コンテンツ生成に失敗: #{e.message}")
+
+      @keywords = keywords
+      @date_start = date_start
+      @date_end = date_end
+      @send_to_kindle = send_to_kindle
+      @error_message = "コンテンツ生成に失敗しました: #{e.message}"
+      @success_message = nil
+      return erb :filtered_pdf
+    end
 
     # PDF 生成（Task 6）
     pdf_content = {
@@ -540,29 +553,16 @@ post '/filtered_pdf/generate' do
     # Task 8.2 & 8.3: ダウンロード または Kindle 送信
     if send_to_kindle
       # Task 8.3: Kindle メール送信
-      begin
-        email_sender = KindleEmailSender.new
-        email_sender.send_pdf(pdf_result[:pdf_path], nil)
+      email_sender = KindleEmailSender.new
+      email_sender.send_pdf(pdf_result[:pdf_path], subject: "キーワード PDF: #{keywords}")
 
-        @keywords = keywords
-        @date_start = date_start
-        @date_end = date_end
-        @send_to_kindle = send_to_kindle
-        @error_message = nil
-        @success_message = "✅ Kindle に PDF を送信しました！"
-        erb :filtered_pdf
-      rescue => e
-        # Task 9.4: メール送信失敗時に DB 更新
-        history.mark_failed(pdf_uuid, "メール送信に失敗: #{e.message}")
-
-        @keywords = keywords
-        @date_start = date_start
-        @date_end = date_end
-        @send_to_kindle = send_to_kindle
-        @error_message = "メール送信に失敗しました: #{e.message}"
-        @success_message = nil
-        erb :filtered_pdf
-      end
+      @keywords = keywords
+      @date_start = date_start
+      @date_end = date_end
+      @send_to_kindle = send_to_kindle
+      @error_message = nil
+      @success_message = "✅ Kindle に PDF を送信しました！"
+      erb :filtered_pdf
     else
       # Task 8.2: PDF ダウンロード
       send_file(
