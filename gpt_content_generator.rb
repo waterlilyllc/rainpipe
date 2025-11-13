@@ -160,9 +160,12 @@ class GPTContentGenerator
     nil
   end
 
+  private
+
   # ブックマークの本文コンテンツをサマリー化（公開メソッド）
   # @param content [String] Gatherlyから取得した本文内容
   # @return [String] サマリー化されたテキスト
+  public
   def generate_bookmark_summary(content)
     return '' if content.nil? || content.to_s.strip.empty?
 
