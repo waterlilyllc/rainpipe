@@ -50,70 +50,79 @@ All 7 requirements (1, 2, 2-1, 3, 3-1, 3-2, 3-3, 4, 5, 6, 7) fully covered
 
 ## コア Service クラス実装
 
-- [ ] 3. KeywordFilteredPDFService オーケストレーションクラスを実装
-- [ ] 3.1 RaindropClient を使用したキーワード + 日付範囲によるブックマークフィルタリング機能
+- [x] 3. KeywordFilteredPDFService オーケストレーションクラスを実装
+- [x] 3.1 RaindropClient を使用したキーワード + 日付範囲によるブックマークフィルタリング機能
   - デフォルト日付範囲：3 ヶ月前～今日（Date.today.prev_month(2) から Date.today）
   - キーワード OR マッチング：title、tags、excerpt フィールドで複数キーワードを検索
   - フィルタ後のブックマーク件数をログ出力（"📚 X 件のブックマークをフィルタ")
   - フィルタ後 0 件の場合、エラーメッセージ返却（"検索条件に合致するブックマークが見つかりません"）
   - フィルタリング対象期間をログに記録（"📅 期間: YYYY-MM-DD ～ YYYY-MM-DD"）
   - _Requirements: 2_
+  - ✅ **実装完了**: keyword_filtered_pdf_service.rb（10/10 テスト成功）
 
-- [ ] 3.2 入力キーワードのトリム処理と正規化
+- [x] 3.2 入力キーワードのトリム処理と正規化
   - 各キーワードの前後空白削除（.strip）
   - 空のキーワードをフィルタリング
   - 重複キーワード排除
   - _Requirements: 1, 2_
+  - ✅ **実装完了**: keyword_filtered_pdf_service.rb（10/10 テスト成功）
 
-- [ ] 3.3 (P) ContentChecker クラスを使用してサマリー未取得ブックマークの検出
+- [x] 3.3 (P) ContentChecker クラスを使用してサマリー未取得ブックマークの検出
   - 各ブックマークの summary フィールド有無を確認
   - summary が nil または empty の場合をカウント
   - サマリー欠落数をログ出力（"⚠️ X 件のブックマークのサマリーが未取得）
   - 未取得ブックマークのリストを service に返却
   - _Requirements: 2-1_
+  - ✅ **実装完了**: content_checker.rb（10/10 テスト成功）
 
-- [ ] 3.4 キーワード定義の一貫性確保
+- [x] 3.4 キーワード定義の一貫性確保
   - フィルタリング時のキーワード定義と PDF 出力時で同じキーワード set を使用
   - キーワード定義の変更がないことを assert で検証
   - _Requirements: 5_
+  - ✅ **実装完了**: keyword_filtered_pdf_service.rb（10/10 テスト成功）
 
-- [ ] 3.5 UTC ベース日付処理
+- [x] 3.5 UTC ベース日付処理
   - ユーザー入力日付を UTC に変換（Time.now.utc.iso8601）
   - RaindropClient への日付パラメータは UTC で渡す
   - ログ出力時のタイムスタンプは UTC ISO8601 形式
   - _Requirements: 2, 5_
+  - ✅ **実装完了**: keyword_filtered_pdf_service.rb（10/10 テスト成功）
 
 ---
 
 ## Gatherly API 統合（本文取得）
 
-- [ ] 4. Gatherly API 経由の本文取得ジョブ管理機能を実装
-- [ ] 4.1 (P) サマリー未取得ブックマークのバッチ本文取得ジョブ作成
+- [x] 4. Gatherly API 経由の本文取得ジョブ管理機能を実装
+- [x] 4.1 (P) サマリー未取得ブックマークのバッチ本文取得ジョブ作成
   - 未取得ブックマークを 15 件ずつのバッチに分割
   - 各バッチごとに GatherlyClient.create_crawl_job を呼び出し
   - ジョブ UUID を記録（"🌐 本文取得ジョブを作成: job_uuid_xxx"）
   - 最大バッチ数に制限（例：最大 10 バッチまで）して API 乱用防止
   - _Requirements: 2-1_
+  - ✅ **実装完了**: gatherly_batch_fetcher.rb（18/18 テスト成功）
 
-- [ ] 4.2 (P) Gatherly ジョブのポーリングと完了待機（5 分タイムアウト）
+- [x] 4.2 (P) Gatherly ジョブのポーリングと完了待機（5 分タイムアウト）
   - 2-3 秒間隔でジョブ状態を確認（GatherlyClient.get_job_status）
   - ジョブ完了（status='completed'）まで待機
   - 5 分経過時点でタイムアウト判定（スタートから 300 秒）
   - タイムアウト時は warning log を出力して処理継続（"⏱️ 本文取得ジョブがタイムアウト。サマリー未取得として継続"）
   - _Requirements: 2-1_
+  - ✅ **実装完了**: gatherly_job_poller.rb（9/9 テスト成功）
 
-- [ ] 4.3 (P) Gatherly ジョブ結果の取得と本文マージ
+- [x] 4.3 (P) Gatherly ジョブ結果の取得と本文マージ
   - ジョブ完了後、GatherlyClient.get_job_result で記事内容を取得
   - 取得した content を対応するブックマークの summary フィールドに統合
   - マージ失敗（null content など）の場合は "summary unavailable" マーカーを設定
   - サマリー取得状況（成功・失敗数）をログ（"✓ X 件のサマリーを取得、✗ Y 件失敗"）
   - _Requirements: 2-1_
+  - ✅ **実装完了**: gatherly_result_merger.rb（8/8 テスト成功）
 
-- [ ] 4.4 (P) ジョブ実行時間計測
+- [x] 4.4 (P) ジョブ実行時間計測
   - Gatherly 本文取得の開始～完了時刻を計測
   - gatherly_fetch_duration_ms を DB に記録
   - パフォーマンス分析用に "🕐 本文取得時間: XXX 秒" をログ
   - _Requirements: 7_
+  - ✅ **実装完了**: gatherly_timing.rb（12/12 テスト成功）
 
 ---
 
