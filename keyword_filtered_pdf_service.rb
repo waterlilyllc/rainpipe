@@ -161,6 +161,9 @@ class KeywordFilteredPDFService
     puts "📅 期間: #{@date_range[:start]} ～ #{@date_range[:end]}"
     puts "📚 #{@filtered_bookmarks.length} 件のブックマークをフィルタ"
 
+    # キャッシュから以前取得した summary を復元
+    restore_cached_summaries(@filtered_bookmarks)
+
     # エラーチェック
     if @filtered_bookmarks.empty?
       @error = "検索条件に合致するブックマークが見つかりません"
@@ -168,6 +171,38 @@ class KeywordFilteredPDFService
     end
 
     true
+  end
+
+  # キャッシュ（data/ 内の JSON）から summary を復元
+  def restore_cached_summaries(bookmarks)
+    cache_files = Dir.glob(File.join('data', '*.json')).sort_by { |f| File.mtime(f) }.reverse
+
+    cache_files.each do |cache_file|
+      begin
+        cached_data = JSON.parse(File.read(cache_file))
+        cached_bookmarks = cached_data.is_a?(Array) ? cached_data : cached_data['bookmarks'] || []
+
+        bookmarks.each do |bookmark|
+          bookmark_url = bookmark['url'] || bookmark['link']
+          next unless bookmark_url
+
+          # キャッシュから同じ URL のブックマークを探す
+          cached_bookmark = cached_bookmarks.find do |cb|
+            cached_url = cb['url'] || cb['link']
+            cached_url && bookmark_url == cached_url
+          end
+
+          # キャッシュから summary を復元
+          if cached_bookmark && cached_bookmark['summary'] && cached_bookmark['summary'].to_s.strip.length > 10
+            bookmark['summary'] = cached_bookmark['summary']
+            puts "  📥 キャッシュから復元: #{bookmark['title'][0..50]}..."
+          end
+        end
+      rescue => e
+        # キャッシュ読み込み失敗は無視
+        next
+      end
+    end
   end
 
   # キーワードのいずれかに合致するかチェック
