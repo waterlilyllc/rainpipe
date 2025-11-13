@@ -22,6 +22,7 @@ class KeywordPDFGenerator
     '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
     '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
     '/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf',
+    '/usr/share/fonts/truetype/ipafont-gothic/ipag.ttf',
     '/usr/share/fonts/truetype/fonts-japanese-gothic.ttf'
   ].freeze
 
