@@ -50,7 +50,8 @@ class KeywordPDFGenerator
 
       # Task 6.2: セクション構成順序（全体サマリー → 関連ワード → 考察 → ブックマーク詳細）
       # Task 6.3: 全体サマリーセクション
-      render_overall_summary(pdf, content[:summary])
+      overall_summary = content[:overall_summary] || content[:summary] || ''
+      render_overall_summary(pdf, overall_summary)
       pdf.stroke_horizontal_line(0, pdf.bounds.width)
 
       # Task 6.4: 関連ワードセクション
@@ -199,7 +200,7 @@ class KeywordPDFGenerator
     chunk_bookmarks(bookmarks).each_with_index do |chunk, chunk_index|
       chunk.each do |bookmark|
         title = bookmark['title'] || '（タイトルなし）'
-        url = bookmark['url'] || ''
+        url = bookmark['url'] || bookmark['link'] || '（URL なし）'
         summary = bookmark['summary'] || '（サマリー未取得）'
 
         pdf.text "■ #{title}", size: 10, style: :bold
