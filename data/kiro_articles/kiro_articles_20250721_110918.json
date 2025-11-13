@@ -1,0 +1,77 @@
+{
+  "keyword": "Kiro",
+  "fetched_at": "2025-07-21T11:09:18+09:00",
+  "total_articles": 10,
+  "articles": [
+    {
+      "title": "AWS、AI駆動開発を支援するIDE「Kiro」を発表 仕様駆動により保守 ...",
+      "url": "https://codezine.jp/article/detail/21917",
+      "snippet": "3 days ago ... 現在は無料プレビュー版として提供されている。 同サービスは、プロンプトから仕様要件を展開しタスクを実装する「Kiro スペック」、開発中の定型業務を ...",
+      "source": "codezine.jp",
+      "fetched_at": "2025-07-21T11:09:18+09:00"
+    },
+    {
+      "title": "Kiro のご紹介 – プロトタイプからプロダクションまで、あなた ...",
+      "url": "https://aws.amazon.com/jp/blogs/news/introducing-kiro/",
+      "snippet": "6 days ago ... それが Kiro が仕様駆動開発で支援することです。 コンセプトからプロダクションまで、AI エージェントとの作業を簡素化した開発者体験を通じて開発を支援する AI IDE ...",
+      "source": "aws.amazon.com",
+      "fetched_at": "2025-07-21T11:09:18+09:00"
+    },
+    {
+      "title": "AWS製AI統合開発環境\"KIRO\"の仕様駆動開発でWebアプリを爆速 ...",
+      "url": "https://qiita.com/kyuko/items/60abec146f5058b74d61",
+      "snippet": "6 days ago ... こんにちは！ひさふるです。 先ほど(2025年7月14日)、AWS製のAIエージェント搭載IDE\"KIRO\"のプレビュー版が公開されました！ その実力がどれほどのものか、さっそく触っ ...",
+      "source": "qiita.com",
+      "fetched_at": "2025-07-21T11:09:18+09:00"
+    },
+    {
+      "title": "Agentic IDE Kiro を使って仕様駆動開発を試してみた | DevelopersIO",
+      "url": "https://dev.classmethod.jp/articles/kiro-getting-started/",
+      "snippet": "3 days ago ... こんにちは、森田です。 AWS から Kiro と呼ばれる AI コードエディターが Public Preview としてアナウンスされました。 Kiro のご紹介 – プロトタイプから ...",
+      "source": "dev.classmethod.jp",
+      "fetched_at": "2025-07-21T11:09:18+09:00"
+    },
+    {
+      "title": "Amazon発の新たなAI IDE『Kiro』を徹底レビュー｜次世代のAI駆動 ...",
+      "url": "https://note.com/masa_wunder/n/nf1183852a1df",
+      "snippet": "5 days ago ... 【4: 安全】Kiroの光と影：AWSが仕掛けた「スペック駆動開発」革命の真の実力. 9. 平岡憲人（ノーリー）. CursorでもClaudeでもない。Kiroが目指す\"思考する仕様駆動開発\"と ...",
+      "source": "note.com",
+      "fetched_at": "2025-07-21T11:09:18+09:00"
+    },
+    {
+      "title": "最新のAI駆動開発ツール「Kiro」を徹底解説!!",
+      "url": "https://zenn.dev/galirage/articles/aws-ai-native-kiro",
+      "snippet": "4 days ago ... Kiroとは、AWSが開発したGitHub CopilotやCursorのような ... 公式サイトでは、「Spec-driven Development（仕様駆動開発）」によるAIコーディングと打ち出しています。",
+      "source": "zenn.dev",
+      "fetched_at": "2025-07-21T11:09:18+09:00"
+    },
+    {
+      "title": "AWS の エージェント IDE Kiro を使ってみた",
+      "url": "https://azukiazusa.dev/blog/kiro-agent-ide",
+      "snippet": "6 days ago ... Kiro は AWS が開発した IDE 内蔵型の AI コーディングエージェントです。Kiro の特徴は単なるバイブコーディングにとどまらず、スペックを使用して仕様駆動開発で ...",
+      "source": "azukiazusa.dev",
+      "fetched_at": "2025-07-21T11:09:18+09:00"
+    },
+    {
+      "title": "Kiroとは？AWSが開発した“仕様駆動”の次世代AI IDEの概要・料金 ...",
+      "url": "https://www.ai-souken.com/article/what-is-kiro-amazon",
+      "snippet": "4 days ago ... KiroはAWSが開発した次世代AI IDEで、プロンプトから本番品質のアプリケーション構築までを支援 · Specification-Driven Developmentにより、要件定義から設計、タスク管理 ...",
+      "source": "www.ai-souken.com",
+      "fetched_at": "2025-07-21T11:09:18+09:00"
+    },
+    {
+      "title": "AWS、AIエージェント型IDE「Kiro」をリリース ―プロトタイプ作成 ...",
+      "url": "https://gihyo.jp/article/2025/07/kiro",
+      "snippet": "6 days ago ... AWS⁠⁠、AIエージェント型IDE「Kiro」をリリース ―プロトタイプ作成から本番環境までAIがサポートする“スペック駆動開発”が可能に. 2025-07-15. 123. シェア. 1分. AWSは ...",
+      "source": "gihyo.jp",
+      "fetched_at": "2025-07-21T11:09:18+09:00"
+    },
+    {
+      "title": "AWS、仕様駆動型AI IDE「Kiro」を正式発表 “プロンプトから本番 ...",
+      "url": "https://ledge.ai/articles/aws_ai_ide_kiro_release",
+      "snippet": "5 days ago ... Amazon Web Services（AWS）は2025年7月14日、AIエージェントを中核に据えた新しい統合開発環境（IDE）「Kiro（キロ）」を発表した。 Kiroは、開発初期の曖昧なアイデアを、 ...",
+      "source": "ledge.ai",
+      "fetched_at": "2025-07-21T11:09:18+09:00"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rainpipe - タグ: #<%= @tag %></title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>🌧️ Rainpipe</h1>
+    <p>タグ別ブックマーク表示</p>
+  </header>
+
+  <nav class="main-nav">
+    <div class="nav-links">
+      <a href="/" class="nav-button">🏠 ホーム</a>
+      <a href="/weekly" class="nav-button">📅 週間表示</a>
+      <a href="/monthly" class="nav-button">📆 月間表示</a>
+      <button id="refresh-btn" class="nav-button refresh-btn">
+        <span id="refresh-icon">🔄</span>
+        <span id="refresh-text">新着取得</span>
+      </button>
+    </div>
+    
+    <div class="search-box">
+      <form action="/search" method="get">
+        <input type="text" name="q" placeholder="ブックマークを検索...">
+        <button type="submit">🔍</button>
+      </form>
+    </div>
+  </nav>
+
+  <main>
+    <h2>🏷️ タグ: #<%= @tag %></h2>
+
+    <% if @bookmarks && @bookmarks.any? %>
+      <div class="tag-stats">
+        <p><strong><%= @bookmarks.length %></strong> 件のブックマーク</p>
+      </div>
+
+      <div class="bookmarks-list">
+        <% @bookmarks.each do |bookmark| %>
+          <article class="bookmark-item">
+            <div class="bookmark-header">
+              <h3><a href="<%= bookmark['link'] %>" target="_blank"><%= bookmark['title'] %></a></h3>
+              <div class="bookmark-date">
+                <span class="created">📅 <%= format_date(bookmark['created']) %></span>
+              </div>
+            </div>
+            
+            <% if bookmark['tags'] && bookmark['tags'].any? %>
+              <div class="bookmark-tags">
+                <% bookmark['tags'].each do |tag| %>
+                  <% if tag == @tag %>
+                    <span class="tag current">#<%= tag %></span>
+                  <% else %>
+                    <a href="/tags/<%= tag %>" class="tag">#<%= tag %></a>
+                  <% end %>
+                <% end %>
+              </div>
+            <% end %>
+            
+            <% if bookmark['excerpt'] && !bookmark['excerpt'].empty? %>
+              <p class="excerpt"><%= bookmark['excerpt'] %></p>
+            <% end %>
+          </article>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="no-bookmarks">このタグのブックマークは見つかりませんでした。</p>
+    <% end %>
+  </main>
+
+  <footer>
+    <p><a href="/">ホーム</a> | <a href="/weekly">週間表示</a> | <a href="/monthly">月間表示</a></p>
+  </footer>
+
+  <script src="/refresh.js"></script>
+</body>
+</html>

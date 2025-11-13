@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分析履歴 - Rainpipe</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 2rem;
+      color: #2c3e50;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      text-decoration: none;
+      color: #3498db;
+      font-size: 0.9rem;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+    .history-list {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .history-item {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      transition: background 0.2s;
+    }
+    .history-item:hover {
+      background: #f8f9fa;
+    }
+    .history-item:last-child {
+      border-bottom: none;
+    }
+    .history-date {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+    .history-meta {
+      display: flex;
+      gap: 20px;
+      color: #666;
+      font-size: 0.9rem;
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    .run-analysis {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #3498db;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .run-analysis:hover {
+      background: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/interests" class="back-link">← ダッシュボードに戻る</a>
+    
+    <h1>📊 分析履歴</h1>
+    
+    <% if @analyses && @analyses.any? %>
+      <div class="history-list">
+        <% @analyses.each do |analysis| %>
+          <div class="history-item">
+            <div class="history-date">
+              <%= Time.parse(analysis[:generated_at]).strftime('%Y年%m月%d日 %H:%M') %>
+            </div>
+            <div class="history-meta">
+              <div class="meta-item">
+                📅 期間: <%= analysis[:period]['start'] %> 〜 <%= analysis[:period]['end'] %>
+              </div>
+              <div class="meta-item">
+                🔑 キーワード数: <%= analysis[:keyword_count] %>個
+              </div>
+              <div class="meta-item">
+                📄 ファイル: <%= analysis[:filename] %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="empty-state">
+        <h2>分析履歴がありません</h2>
+        <p>まだ一度も分析を実行していません。</p>
+        <a href="#" class="run-analysis">今すぐ分析を実行</a>
+      </div>
+    <% end %>
+  </div>
+</body>
+</html>

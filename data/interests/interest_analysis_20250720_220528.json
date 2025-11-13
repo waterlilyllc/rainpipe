@@ -1,0 +1,117 @@
+{
+  "generated_at": "2025-07-20T22:05:28+09:00",
+  "analysis_period": {
+    "start": "2025-06-20",
+    "end": "2025-07-20"
+  },
+  "analysis": {
+    "analysis_period": {
+      "start": "2025-06-20",
+      "end": "2025-07-20",
+      "total_bookmarks": 43
+    },
+    "core_interests": [
+      {
+        "keyword": "Kiro",
+        "frequency": 5,
+        "importance": 9,
+        "category": "technology",
+        "context": "Kiroは仕様書駆動開発を支援する新しいIDEであり、開発フローにおいて重要な役割を果たすため、興味が高まっています。",
+        "examples": [
+          "Kiroの仕様書駆動開発プロセスをClaude Codeで徹底的に再現した",
+          "Kiroみたいな「仕様書駆動開発」をClaude Code・Opus 4でやるまでの手順を整理した！！！ #LLM - Qiita",
+          "Kiro のご紹介 – プロトタイプからプロダクションまで、あなたと共に働く新しい Agentic IDE | Amazon Web Services"
+        ]
+      },
+      {
+        "keyword": "Claude",
+        "frequency": 6,
+        "importance": 8,
+        "category": "ai-ml",
+        "context": "ClaudeはAIを活用したツールであり、特に開発プロセスでの効率化に役立つため、多くの関心が寄せられています。",
+        "examples": [
+          "Anthropicの「Claude」、外部アプリや外部サイトとの連携が可能に - ZDNET Japan",
+          "Claude の Connectors Directory の概要｜npaka",
+          "Claude Codeの「すぐルール忘れる問題」をHooksで解決する"
+        ]
+      }
+    ],
+    "emerging_interests": [
+      {
+        "keyword": "Gemini CLI",
+        "first_seen": "2025-07-02",
+        "growth_rate": "急速",
+        "potential": "高い",
+        "related_to": [
+          "Obsidian",
+          "AI",
+          "ノート術"
+        ]
+      }
+    ],
+    "technology_stack": {
+      "languages": [
+        "JavaScript",
+        "Python"
+      ],
+      "frameworks": [
+        "Vue.js",
+        "Playwright"
+      ],
+      "tools": [
+        "Claude Code",
+        "Obsidian",
+        "Kiro",
+        "gcloud"
+      ],
+      "platforms": [
+        "AWS",
+        "GCP"
+      ]
+    },
+    "learning_phases": {
+      "exploring": [
+        "AI",
+        "新しいIDE"
+      ],
+      "practicing": [
+        "JavaScript",
+        "gcloud"
+      ],
+      "deepening": [
+        "Kiro",
+        "Claude Codeの活用"
+      ]
+    },
+    "interest_clusters": [
+      {
+        "cluster_name": "AIと開発ツール",
+        "keywords": [
+          "Claude",
+          "Kiro",
+          "Playwright",
+          "Gemini CLI"
+        ],
+        "theme": "AIを活用した開発効率の向上"
+      },
+      {
+        "cluster_name": "ノートとタスク管理",
+        "keywords": [
+          "Obsidian",
+          "TimeRuler"
+        ],
+        "theme": "知識管理とアウトプットの効率化"
+      }
+    ],
+    "insights": {
+      "summary": "AIと開発ツールに対する非常に高い関心が見られ、特にKiroやClaudeに関連する技術に集中しています。また、ノート管理ツールの活用にも力を入れているようです。",
+      "recommendations": [
+        "新しいAIツールの動向",
+        "マルチクラウド環境の構築"
+      ],
+      "blind_spots": [
+        "セキュリティやプライバシーに関連するトピック"
+      ]
+    }
+  }
+}

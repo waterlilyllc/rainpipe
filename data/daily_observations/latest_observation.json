@@ -1,0 +1,281 @@
+{
+  "observed_at": "2025-07-21T10:12:26+09:00",
+  "total_keywords": 4,
+  "total_valuable_articles": 13,
+  "observations": [
+    {
+      "keyword": "Kiro",
+      "category": "technology",
+      "search_query": "Kiro 最新",
+      "searched_at": "2025-07-21T10:11:33+09:00",
+      "total_found": 10,
+      "valuable_count": 2,
+      "articles": [
+        {
+          "title": "ゲームづくりの最新情報やアイデアを紹介！｜ゲームメーカーズ",
+          "url": "https://gamemakers.jp/",
+          "snippet": "10 hours ago ... ゲームづくりをはじめるきっかけや、ツールの最新 ... エージェント型AI搭載のIDE「Kiro」プレビュー版がリリース。要件を補って仕様書 ...",
+          "source": "gamemakers.jp",
+          "keyword": "Kiro",
+          "evaluation": {
+            "relevance_score": 8,
+            "novelty_score": 7,
+            "importance_score": 8,
+            "reasoning": "Kiroに関する新しい情報を提供しており、ユーザーにとって重要な技術的な内容が含まれているため。",
+            "key_points": [
+              "Kiroのプレビュー版リリース",
+              "仕様書駆動開発の支援"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:11:33+09:00"
+        },
+        {
+          "title": "Amazon \"Kiro\": Vibe Codingはもう終わり？ コーディングの前に ...",
+          "url": "https://qiita.com/RepKuririn/items/76708df0aeb0abd7898d",
+          "snippet": "13 hours ago ... この記事では、KiroがAIコーディングの世界にどのような変革をもたらすのか、その核心的な機能とワークフローを深掘りします。 この記事でわかること. AI IDE市場の最新 ...",
+          "source": "qiita.com",
+          "keyword": "Kiro",
+          "evaluation": {
+            "relevance_score": 9,
+            "novelty_score": 8,
+            "importance_score": 9,
+            "reasoning": "Kiroに関する詳細な情報を提供しており、技術的な革新について深く掘り下げているため。",
+            "key_points": [
+              "AIコーディングの変革",
+              "Kiroの核心的機能"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:11:33+09:00"
+        }
+      ]
+    },
+    {
+      "keyword": "Claude",
+      "category": "ai-ml",
+      "search_query": "Claude 最新",
+      "searched_at": "2025-07-21T10:11:51+09:00",
+      "total_found": 10,
+      "valuable_count": 4,
+      "articles": [
+        {
+          "title": "記事一覧 - Engineer's Digest - 忙しいエンジニアのための技術情報 ...",
+          "url": "https://www.ponkotsu.dev/archive",
+          "snippet": "4 hours ago ... AIコーディング環境の進化！CursorとClaude Codeを使いこなす最新ガイド Googleの最新AIライブラリ「GenAI Processors」とAIエージェント開発 開発効率を高めるCLIツールと ...",
+          "source": "www.ponkotsu.dev",
+          "keyword": "Claude",
+          "evaluation": {
+            "relevance_score": 9,
+            "novelty_score": 8,
+            "importance_score": 8,
+            "reasoning": "Claude Codeを使いこなすための具体的なガイドがあり、開発効率を高める情報が豊富で、ユーザーにとって非常に有益。",
+            "key_points": [
+              "AIコーディング環境の進化",
+              "開発効率向上"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:11:51+09:00"
+        },
+        {
+          "title": "【最新の生成AIサービス】誰でも簡単に独自のAIアプリが作れる ...",
+          "url": "https://academy.president.jp/articles/-/1659",
+          "snippet": "16 hours ago ... AI搭載のアプリをノーコードで作成できる機能がClaudeに登場しました。自分の業務に特化した独自のアプリを簡単に作れます。具体的な活用方法を池田朋弘さんがデモを ...",
+          "source": "academy.president.jp",
+          "keyword": "Claude",
+          "evaluation": {
+            "relevance_score": 9,
+            "novelty_score": 9,
+            "importance_score": 8,
+            "reasoning": "Claudeの新機能であるノーコードアプリ作成機能について具体的な活用方法が示されており、非常に実用的な情報を提供している。",
+            "key_points": [
+              "ノーコードアプリ作成",
+              "業務特化型アプリ"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:11:51+09:00"
+        },
+        {
+          "title": "Qiita",
+          "url": "https://qiita.com/",
+          "snippet": "3 hours ago ... 【Claude Code】マネできる！個人開発するときに最初に用意したドキュメント24種と機能要件書を全公開 · 個人開発 · 生成AI · Claude · AIエージェント · ClaudeCode. 11.",
+          "source": "qiita.com",
+          "keyword": "Claude",
+          "evaluation": {
+            "relevance_score": 8,
+            "novelty_score": 7,
+            "importance_score": 7,
+            "reasoning": "Claude Codeに関する具体的なドキュメントや機能要件書の公開があり、実践的な情報が得られる。",
+            "key_points": [
+              "ドキュメント公開",
+              "個人開発支援"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:11:51+09:00"
+        },
+        {
+          "title": "Claude CodeのMCPコマンド生成を簡単にするChrome拡張機能 ...",
+          "url": "https://izanami.dev/post/10b7050e-7592-41a5-8581-df1ed88653e7",
+          "snippet": "3 hours ago ... GitHubから最新版をダウンロード; ZIPを解凍; Chromeの拡張機能ページ（ chrome://extensions/ ）で「デベロッパーモード」をON; 「パッケージ化されていない拡張機能を ...",
+          "source": "izanami.dev",
+          "keyword": "Claude",
+          "evaluation": {
+            "relevance_score": 8,
+            "novelty_score": 7,
+            "importance_score": 7,
+            "reasoning": "Chrome拡張機能に関する具体的な情報があり、Claude Codeの利用を促進する内容が含まれている。",
+            "key_points": [
+              "Chrome拡張機能",
+              "MCPコマンド生成"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:11:51+09:00"
+        }
+      ]
+    },
+    {
+      "keyword": "Gemini CLI",
+      "category": "ai-ml",
+      "search_query": "Gemini CLI (MCP OR AI Agent) 最新",
+      "searched_at": "2025-07-21T10:12:09+09:00",
+      "total_found": 9,
+      "valuable_count": 2,
+      "articles": [
+        {
+          "title": "Gemini CLIのソースコードから学ぶAIエージェントの設計",
+          "url": "https://zenn.dev/acntechjp/articles/8916ccd1c4ea37",
+          "snippet": "14 hours ago ... Claude CodeをはじめとするCLI形式のAIエージェント型プログラミング支援ツールが、非常に注目を集めています。この流れを受けて、先月Googleも「Gemini CLI」を ...",
+          "source": "zenn.dev",
+          "keyword": "Gemini CLI",
+          "evaluation": {
+            "relevance_score": 9,
+            "novelty_score": 8,
+            "importance_score": 8,
+            "reasoning": "Gemini CLIに特化した内容であり、AIエージェントの設計に関する具体的な情報を提供しているため、関連性と新規性が高い。",
+            "key_points": [
+              "Gemini CLIのソースコード分析",
+              "AIエージェントの設計原則"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:12:09+09:00"
+        },
+        {
+          "title": "［開発者向け］ADKとGemini CLIで加速する！AIエージェント開発 ...",
+          "url": "https://jobirun.com/how-to-build-ai-agents-with-adk-gemini/",
+          "snippet": "12 hours ago ... はじめに 本稿では、AIエージェントの開発を効率化する新しい手法について、Google Developers Blogの記事「Simplify your Agent \"vibe building\" flow with ADK and ...",
+          "source": "jobirun.com",
+          "keyword": "Gemini CLI",
+          "evaluation": {
+            "relevance_score": 8,
+            "novelty_score": 7,
+            "importance_score": 8,
+            "reasoning": "Gemini CLIとADKを組み合わせた新しい開発手法について具体的に解説しており、関連性と新規性が高い。",
+            "key_points": [
+              "AIエージェント開発の効率化",
+              "ADKとの統合"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:12:09+09:00"
+        }
+      ]
+    },
+    {
+      "keyword": "AI開発",
+      "category": "technology",
+      "search_query": "AI開発 (LLM OR RAG) 最新",
+      "searched_at": "2025-07-21T10:12:25+09:00",
+      "total_found": 8,
+      "valuable_count": 5,
+      "articles": [
+        {
+          "title": "AI開発企業・生成AI、AIサービスの導入や活用支援会社を比較選定 ...",
+          "url": "https://ai-market.jp/",
+          "snippet": "22 hours ago ... 画像認識、生成AI、需要予測、最適化、ChatGPT、RAG、LLM、画像生成など全AIに対応。AI導入や生成AIを活用支援におすすめAI企業選定支援サービス。AI開発会社、AI ...",
+          "source": "ai-market.jp",
+          "keyword": "AI開発",
+          "evaluation": {
+            "relevance_score": 8,
+            "novelty_score": 7,
+            "importance_score": 8,
+            "reasoning": "AI導入や生成AI活用支援に関する具体的な情報を提供しており、企業選定支援サービスについても触れているため、実用的な内容がある。",
+            "key_points": [
+              "AI導入支援",
+              "生成AI活用"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:12:25+09:00"
+        },
+        {
+          "title": "Azure",
+          "url": "https://events.microsoft.com/ja-jp/azure?language=%E6%97%A5%E6%9C%AC%E8%AA%9E&clientTimeZone=1",
+          "snippet": "11 hours ago ... このセッションでは、AI主導による開発の未来に焦点を当て、Azure、GitHub Copilot Agent、Advanced Security、そして Microsoft の最新 Cloud & AI 機能を活用しながら、“ ...",
+          "source": "events.microsoft.com",
+          "keyword": "AI開発",
+          "evaluation": {
+            "relevance_score": 9,
+            "novelty_score": 8,
+            "importance_score": 9,
+            "reasoning": "AI主導による開発の未来に関するセッション情報を提供しており、最新の技術やツールに焦点を当てているため、非常に価値がある。",
+            "key_points": [
+              "Azureの最新機能",
+              "AI主導の開発"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:12:25+09:00"
+        },
+        {
+          "title": "AIDB | AI論文データベース",
+          "url": "https://ai-data-base.com/",
+          "snippet": "1 hour ago ... LLM時代のソフトウェア開発者が考える「要件からコード生成」の実践ポイント ... LLM RAG エージェント 有料記事 論文 · LLMを活用した採用フィードバックの効率化.",
+          "source": "ai-data-base.com",
+          "keyword": "AI開発",
+          "evaluation": {
+            "relevance_score": 8,
+            "novelty_score": 7,
+            "importance_score": 8,
+            "reasoning": "LLMを活用した具体的な実践ポイントを提供しており、実用的な情報が含まれているため、価値がある。",
+            "key_points": [
+              "要件からコード生成",
+              "LLM活用の実践"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:12:25+09:00"
+        },
+        {
+          "title": "アリババのオープンソースLLM「Qwen」、派生モデル10万超で世界 ...",
+          "url": "https://36kr.jp/332677/",
+          "snippet": "20 hours ago ... 人工知能（AI）開発プラットフォームの米Hugging Face ... セミナー情報や最新業界レポートを無料でお届け. メールマガジンに登録. ボット ...",
+          "source": "36kr.jp",
+          "keyword": "AI開発",
+          "evaluation": {
+            "relevance_score": 8,
+            "novelty_score": 7,
+            "importance_score": 8,
+            "reasoning": "アリババのオープンソースLLMに関する情報を提供しており、業界の最新動向を反映しているため、価値がある。",
+            "key_points": [
+              "オープンソースLLM",
+              "業界動向"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:12:25+09:00"
+        },
+        {
+          "title": "【大規模言語モデル(LLM)開発】25年7月3週の注目記事5選 | NIKKEI ...",
+          "url": "https://www.nikkei.com/compass/theme/160123/pickup/20250721",
+          "snippet": "3 hours ago ... OpenAI、数学五輪「金メダル水準」のAI開発 思考力が向上...オープンAIが研究開発中の新型の 大 規模 言語 モデル （LLM）に、2025年の数学オリンピックの問題を解かせた ...",
+          "source": "www.nikkei.com",
+          "keyword": "AI開発",
+          "evaluation": {
+            "relevance_score": 8,
+            "novelty_score": 8,
+            "importance_score": 9,
+            "reasoning": "OpenAIの新型LLMに関する具体的な情報を提供しており、重要な研究開発の進展を示しているため、価値がある。",
+            "key_points": [
+              "新型LLMの開発",
+              "数学オリンピックの問題"
+            ]
+          },
+          "evaluated_at": "2025-07-21T10:12:25+09:00"
+        }
+      ]
+    }
+  ]
+}

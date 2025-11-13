@@ -1,0 +1,197 @@
+{
+  "generated_at": "2025-08-13T13:19:02+09:00",
+  "analysis_period": {
+    "start": "2025-07-14",
+    "end": "2025-08-13"
+  },
+  "analysis": {
+    "analysis_period": {
+      "start": "2025-07-14",
+      "end": "2025-08-13",
+      "total_bookmarks": 40
+    },
+    "core_interests": [
+      {
+        "keyword": "Claude Code",
+        "frequency": 8,
+        "importance": 9,
+        "category": "technology",
+        "context": "AIによるコーディング支援ツールとしてのClaude Codeの利用が注目されている。生産性向上に寄与することが期待されている。",
+        "examples": [
+          "Claude Codeの全てを可視化！リアルタイムモニタリングダッシュボードで開発効率を最大化",
+          "Claude Codeによる生産性向上の限界｜すてぃお",
+          "Claude Codeを開発の全フェーズで活用したら開発生産性が1.5倍に向上した"
+        ],
+        "related_hot_words": [
+          {
+            "word": "AIコーディング",
+            "reason": "AIがコーディングを支援する新たなスタイルが注目されている"
+          },
+          {
+            "word": "生産性向上",
+            "reason": "企業や個人の開発効率を向上させる手段として関心が高まっている"
+          },
+          {
+            "word": "カスタムサブエージェント",
+            "reason": "特定のタスクに特化したAIの活用が進んでいる"
+          },
+          {
+            "word": "プロンプトエンジニアリング",
+            "reason": "AIとの対話を通じた開発プロセスの改善が求められている"
+          },
+          {
+            "word": "メタAI",
+            "reason": "AIの進化と共に、AI自体を管理する技術にも関心が寄せられている"
+          }
+        ]
+      },
+      {
+        "keyword": "AI駆動開発",
+        "frequency": 6,
+        "importance": 8,
+        "category": "technology",
+        "context": "AIを活用したプログラミング手法や開発ツールが増えており、その可能性が探求されている。",
+        "examples": [
+          "AI駆動経営 - Claude Codeを用いたバイブコーディング開発フロー",
+          "AWS、AI駆動開発を支援するIDE「Kiro」を発表",
+          "Gemini CLI入門"
+        ],
+        "related_hot_words": [
+          {
+            "word": "ノーコード開発",
+            "reason": "プログラミングの知識がない人でも開発できる新しい流れ"
+          },
+          {
+            "word": "バイブコーディング",
+            "reason": "対話形式で開発が進められる新たなプログラミングスタイル"
+          },
+          {
+            "word": "開発フロー",
+            "reason": "AIを活用した開発の効率化が求められている"
+          },
+          {
+            "word": "IDE",
+            "reason": "統合開発環境におけるAIの統合が進んでいる"
+          },
+          {
+            "word": "エージェント",
+            "reason": "AIを活用した自動化された開発プロセスが進化中"
+          }
+        ]
+      },
+      {
+        "keyword": "動画生成AI",
+        "frequency": 3,
+        "importance": 7,
+        "category": "technology",
+        "context": "動画生成に関する技術が進化しており、特にAIの活用が注目されている。",
+        "examples": [
+          "無料の動画生成AI「Wan2.2」が凄すぎる PCローカルでこの品質が出せるとは"
+        ],
+        "related_hot_words": [
+          {
+            "word": "生成AI",
+            "reason": "様々なメディアコンテンツ生成にAIが利用されるトレンド"
+          },
+          {
+            "word": "ローカルAI",
+            "reason": "サーバに依存しないAIの利用法が広がっている"
+          },
+          {
+            "word": "ディープラーニング",
+            "reason": "AIの性能向上に寄与する技術の一つ"
+          },
+          {
+            "word": "コンテンツ制作",
+            "reason": "AIを使ったコンテンツ制作の効率化が進行中"
+          },
+          {
+            "word": "ビデオエディティング",
+            "reason": "AIによる新たな編集技術が求められている"
+          }
+        ]
+      }
+    ],
+    "emerging_interests": [
+      {
+        "keyword": "Gemini CLI",
+        "first_seen": "2025-07-20",
+        "growth_rate": "急速",
+        "potential": "高い",
+        "related_to": [
+          "AI駆動開発",
+          "Claude Code"
+        ]
+      },
+      {
+        "keyword": "Kiro",
+        "first_seen": "2025-07-23",
+        "growth_rate": "急速",
+        "potential": "高い",
+        "related_to": [
+          "AI駆動開発"
+        ]
+      }
+    ],
+    "technology_stack": {
+      "languages": [
+        "Python",
+        "JavaScript"
+      ],
+      "frameworks": [
+        "React",
+        "Tailwind CSS"
+      ],
+      "tools": [
+        "Claude Code",
+        "Kiro",
+        "Gemini CLI",
+        "GitHub Copilot"
+      ],
+      "platforms": [
+        "AWS",
+        "Google Cloud"
+      ]
+    },
+    "learning_phases": {
+      "exploring": [
+        "動画生成AI",
+        "AI駆動経営"
+      ],
+      "practicing": [
+        "Claude Code",
+        "Gemini CLI"
+      ],
+      "deepening": [
+        "AI駆動開発",
+        "プロンプトエンジニアリング"
+      ]
+    },
+    "interest_clusters": [
+      {
+        "cluster_name": "AI関連技術",
+        "keywords": [
+          "Claude Code",
+          "AI駆動開発",
+          "Gemini CLI",
+          "Kiro",
+          "動画生成AI"
+        ],
+        "theme": "AIを活用した技術と開発手法の探求"
+      }
+    ],
+    "insights": {
+      "summary": "AIを活用したコーディング支援や開発効率化に強い関心を持っており、特にClaude CodeやKiroなどの新しいツールが注目されています。また、動画生成AIも関心の一部であり、メディアコンテンツ制作におけるAIの役割が強調されています。",
+      "recommendations": [
+        "生成AIの最新技術",
+        "AI駆動のビジネスモデル",
+        "ノーコード開発ツール"
+      ],
+      "blind_spots": [
+        "AI倫理",
+        "データプライバシー",
+        "AIの社会的影響"
+      ]
+    }
+  }
+}

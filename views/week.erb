@@ -12,35 +12,63 @@
     <p>週間ブックマーク振り返り</p>
   </header>
 
+  <nav class="main-nav">
+    <div class="nav-links">
+      <a href="/" class="nav-button">🏠 ホーム</a>
+      <a href="/weekly" class="nav-button active">📅 週間表示</a>
+      <a href="/monthly" class="nav-button">📆 月間表示</a>
+      <button id="refresh-btn" class="nav-button refresh-btn">
+        <span id="refresh-icon">🔄</span>
+        <span id="refresh-text">新着取得</span>
+      </button>
+    </div>
+    
+    <div class="search-box">
+      <form action="/search" method="get">
+        <input type="text" name="q" placeholder="ブックマークを検索...">
+        <button type="submit">🔍</button>
+      </form>
+    </div>
+  </nav>
+
   <main>
     <% if @week_start && @week_end %>
-      <h2>📅 <%= @week_start.strftime('%Y年%m月%d日') %> - <%= @week_end.strftime('%m月%d日') %></h2>
+      <h2>📅 <%= @week_start.strftime('%Y年%m月%d日') %> - <%= @week_end.strftime('%m月%d日') %> （月曜始まり）</h2>
+      
+      <!-- 週間ナビゲーション -->
+      <div class="week-pagination">
+        <% get_week_navigation(@week_start).each do |week| %>
+          <% if week[:current] %>
+            <span class="week-nav current"><%= week[:label] %></span>
+          <% else %>
+            <a href="<%= week[:link] %>" class="week-nav"><%= week[:label] %></a>
+          <% end %>
+        <% end %>
+      </div>
+      
+      <!-- サマリーへのリンク -->
+      <div style="margin: 20px 0; text-align: center;">
+        <a href="/weekly/<%= @week_start.strftime('%Y-%m-%d') %>/summary" class="nav-button" style="background: #2ecc71; color: white;">
+          📊 週次キーワードサマリーを見る
+        </a>
+      </div>
+      
+      <!-- 週サマリー -->
+      <% if @weekly_summary %>
+        <div class="weekly-summary">
+          <h3>📋 今週のまとめ</h3>
+          <p><%= @weekly_summary %></p>
+        </div>
+      <% end %>
     <% elsif @tag %>
       <h2>🏷️ タグ: #<%= @tag %></h2>
     <% end %>
 
     <% if @bookmarks && @bookmarks.any? %>
+      <% @exporter ||= BookmarkExporter.new %>
       <div class="bookmarks-list">
         <% @bookmarks.each do |bookmark| %>
-          <article class="bookmark-item">
-            <h3><a href="<%= bookmark['link'] %>" target="_blank"><%= bookmark['title'] %></a></h3>
-            
-            <% if bookmark['excerpt'] && !bookmark['excerpt'].empty? %>
-              <p class="excerpt"><%= bookmark['excerpt'] %></p>
-            <% end %>
-            
-            <div class="meta">
-              <span class="created">📅 <%= format_date(bookmark['created']) %></span>
-              
-              <% if bookmark['tags'] && bookmark['tags'].any? %>
-                <div class="tags">
-                  <% bookmark['tags'].each do |tag| %>
-                    <span class="tag">#<%= tag %></span>
-                  <% end %>
-                </div>
-              <% end %>
-            </div>
-          </article>
+          <%= erb :'partials/_bookmark_item', locals: { bookmark: bookmark } %>
         <% end %>
       </div>
     <% else %>
@@ -49,7 +77,10 @@
   </main>
 
   <footer>
-    <p><a href="/">今週</a> | <a href="/week/<%= previous_week %>">前週</a> | <a href="/week/<%= next_week %>">翌週</a></p>
+    <p><a href="/">ホーム</a> | <a href="/weekly">今週</a> | <a href="/week/<%= previous_week %>">前週</a> | <a href="/week/<%= next_week %>">翌週</a></p>
   </footer>
+
+  <script src="/refresh.js"></script>
+  <script src="/export.js"></script>
 </body>
 </html>

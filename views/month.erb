@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rainpipe - 月間ブックマーク</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>🌧️ Rainpipe</h1>
+    <p>月間ブックマーク振り返り</p>
+  </header>
+
+  <nav class="main-nav">
+    <div class="nav-links">
+      <a href="/" class="nav-button">🏠 ホーム</a>
+      <a href="/weekly" class="nav-button">📅 週間表示</a>
+      <a href="/monthly" class="nav-button active">📆 月間表示</a>
+      <button id="refresh-btn" class="nav-button refresh-btn">
+        <span id="refresh-icon">🔄</span>
+        <span id="refresh-text">新着取得</span>
+      </button>
+    </div>
+    
+    <div class="search-box">
+      <form action="/search" method="get">
+        <input type="text" name="q" placeholder="ブックマークを検索...">
+        <button type="submit">🔍</button>
+      </form>
+    </div>
+  </nav>
+
+  <main>
+    <% if @month_start && @month_end %>
+      <h2>📆 <%= @month_start.strftime('%Y年%m月') %></h2>
+      
+      <!-- 月間ナビゲーション -->
+      <div class="month-pagination">
+        <% get_month_navigation(@month_start).each do |month| %>
+          <% if month[:current] %>
+            <span class="month-nav current"><%= month[:label] %></span>
+          <% else %>
+            <a href="<%= month[:link] %>" class="month-nav"><%= month[:label] %></a>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if @categorized_bookmarks && @categorized_bookmarks.any? %>
+      <div class="month-stats">
+        <p><strong><%= @categorized_bookmarks.values.flatten.length %></strong> 件のブックマーク</p>
+      </div>
+
+      <!-- カテゴリー別表示 -->
+      <% # BookmarkExporter is already loaded via app.rb %>
+      <% @exporter = BookmarkExporter.new %>
+      
+      <% @categorized_bookmarks.each do |category, bookmarks| %>
+        <section class="category-section">
+          <h3 class="category-title"><%= category %> <span class="category-count">(<%= bookmarks.length %>件)</span></h3>
+          
+          <div class="bookmarks-list category-bookmarks">
+            <% bookmarks.each do |bookmark| %>
+              <%= erb :'partials/_bookmark_item', locals: { bookmark: bookmark } %>
+            <% end %>
+          </div>
+        </section>
+      <% end %>
+    <% else %>
+      <p class="no-bookmarks">この月にブックマークはありません。</p>
+    <% end %>
+  </main>
+
+  <footer>
+    <p><a href="/">ホーム</a> | <a href="/weekly">週間表示</a> | <a href="/monthly">月間表示</a></p>
+  </footer>
+
+  <script src="/refresh.js"></script>
+  <script src="/export.js"></script>
+</body>
+</html>

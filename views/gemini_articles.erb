@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini CLI最新記事 - Rainpipe</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      color: #2c3e50;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .gemini-badge {
+      background: linear-gradient(135deg, #4285f4, #34a853);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 30px;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .meta-info {
+      color: #666;
+      font-size: 0.9rem;
+      margin-top: 10px;
+    }
+    .navigation {
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .nav-link {
+      text-decoration: none;
+      color: #3498db;
+      padding: 8px 16px;
+      border-radius: 6px;
+      background: white;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+    }
+    .nav-link:hover {
+      background: #3498db;
+      color: white;
+    }
+    .articles-grid {
+      display: grid;
+      gap: 20px;
+    }
+    .article-card {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: all 0.2s;
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+    .article-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .article-number {
+      display: inline-block;
+      background: #e8f0fe;
+      color: #4285f4;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 30px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    .article-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    .article-snippet {
+      color: #666;
+      font-size: 0.95rem;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+    .article-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: #666;
+    }
+    .article-source {
+      background: #f8f9fa;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    .article-link {
+      color: #4285f4;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .article-link:hover {
+      text-decoration: underline;
+    }
+    .description {
+      background: #e8f0fe;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      border-left: 4px solid #4285f4;
+    }
+    .description h2 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+    .description p {
+      color: #666;
+      line-height: 1.6;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="navigation">
+      <a href="/" class="nav-link">📚 ホーム</a>
+      <a href="/interests" class="nav-link">🎯 関心ワード</a>
+      <a href="/interests/scores" class="nav-link">📊 スコアランキング</a>
+      <a href="/kiro/articles" class="nav-link">📰 Kiro記事</a>
+    </div>
+    
+    <div class="header">
+      <h1>
+        🤖 Gemini CLI最新記事
+        <span class="gemini-badge">Google AI</span>
+      </h1>
+      <% if @fetched_at %>
+        <div class="meta-info">
+          最終更新: <%= Time.parse(@fetched_at).strftime('%Y年%m月%d日 %H:%M') %>
+        </div>
+      <% end %>
+    </div>
+    
+    <div class="description">
+      <h2>⚡ Gemini CLIとは</h2>
+      <p>
+        Gemini CLIはGoogleが開発したオープンソースのAIエージェントツールです。
+        ターミナルから直接Gemini AIの機能を利用でき、コーディング支援、画像生成、
+        Google検索との連携など、開発者の生産性を大幅に向上させる機能を提供します。
+        MCPプロトコルにも対応し、様々なツールとの統合が可能です。
+      </p>
+    </div>
+    
+    <% if @articles && @articles.any? %>
+      <div class="articles-grid">
+        <% @articles.each_with_index do |article, idx| %>
+          <a href="<%= article['url'] %>" target="_blank" class="article-card">
+            <div class="article-number"><%= idx + 1 %></div>
+            <h3 class="article-title"><%= article['title'] %></h3>
+            <p class="article-snippet"><%= article['snippet'] %></p>
+            <div class="article-meta">
+              <span class="article-source"><%= article['source'] %></span>
+              <a href="<%= article['url'] %>" target="_blank" class="article-link">
+                記事を読む →
+              </a>
+            </div>
+          </a>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="empty-state">
+        <h2>記事がまだありません</h2>
+        <p>Gemini CLIの最新記事を取得してください</p>
+      </div>
+    <% end %>
+  </div>
+</body>
+</html>

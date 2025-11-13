@@ -1,0 +1,10 @@
+{
+  "url": "https://www.itmedia.co.jp/aiplus/articles/2507/14/news109.html",
+  "content": {
+    "text": "記事取得エラー（デモモード）: https://www.itmedia.co.jp/aiplus/articles/2507/14/news109.html\n\nデモ用のコンテンツです。実際の運用では記事の本文が表示されます。",
+    "extracted_at": "2025-07-21T15:38:56+09:00",
+    "demo": true,
+    "error": "invalid byte sequence in UTF-8"
+  },
+  "cached_at": "2025-07-21T15:38:56+09:00"
+}

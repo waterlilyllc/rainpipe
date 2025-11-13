@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rainpipe - 検索結果</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>🌧️ Rainpipe</h1>
+    <p>ブックマーク検索</p>
+  </header>
+
+  <nav class="main-nav">
+    <div class="nav-links">
+      <a href="/" class="nav-button">🏠 ホーム</a>
+      <a href="/weekly" class="nav-button">📅 週間表示</a>
+      <a href="/monthly" class="nav-button">📆 月間表示</a>
+      <button id="refresh-btn" class="nav-button refresh-btn">
+        <span id="refresh-icon">🔄</span>
+        <span id="refresh-text">新着取得</span>
+      </button>
+    </div>
+    
+    <div class="search-box">
+      <form action="/search" method="get">
+        <input type="text" name="q" placeholder="ブックマークを検索..." value="<%= @query %>" id="search-input">
+        <button type="submit">🔍</button>
+      </form>
+    </div>
+  </nav>
+
+  <main>
+    <% if @query && !@query.empty? %>
+      <h2>🔍 検索結果: "<%= @query %>"</h2>
+      
+      <% if @bookmarks && @bookmarks.any? %>
+        <div class="search-stats">
+          <p><strong><%= @bookmarks.length %></strong> 件見つかりました</p>
+        </div>
+
+        <div class="bookmarks-list">
+          <% @bookmarks.each do |bookmark| %>
+            <article class="bookmark-item">
+              <div class="bookmark-header">
+                <h3><a href="<%= bookmark['link'] %>" target="_blank"><%= bookmark['title'] %></a></h3>
+                <div class="bookmark-date">
+                  <span class="created">📅 <%= format_date(bookmark['created']) %></span>
+                </div>
+              </div>
+              
+              <% if bookmark['tags'] && bookmark['tags'].any? %>
+                <div class="bookmark-tags">
+                  <% bookmark['tags'].each do |tag| %>
+                    <a href="/tags/<%= tag %>" class="tag">#<%= tag %></a>
+                  <% end %>
+                </div>
+              <% end %>
+              
+              <% if bookmark['excerpt'] && !bookmark['excerpt'].empty? %>
+                <p class="excerpt"><%= bookmark['excerpt'] %></p>
+              <% end %>
+            </article>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="no-bookmarks">「<%= @query %>」に一致するブックマークが見つかりませんでした。</p>
+      <% end %>
+    <% else %>
+      <div class="search-help">
+        <h2>🔍 検索</h2>
+        <p>ブックマークを検索してください。</p>
+        <ul>
+          <li>タイトル、URL、メモから検索</li>
+          <li>複数のキーワードを指定可能</li>
+          <li>タグ検索は #タグ名 で指定</li>
+        </ul>
+      </div>
+    <% end %>
+  </main>
+
+  <footer>
+    <p><a href="/">ホーム</a> | <a href="/weekly">週間表示</a> | <a href="/monthly">月間表示</a></p>
+  </footer>
+
+  <script>
+    // インクリメンタル検索
+    document.getElementById('search-input').addEventListener('input', function() {
+      const query = this.value.trim();
+      if (query.length > 2) {
+        clearTimeout(this.searchTimeout);
+        this.searchTimeout = setTimeout(() => {
+          window.location.href = `/search?q=${encodeURIComponent(query)}`;
+        }, 500);
+      }
+    });
+  </script>
+  <script src="/refresh.js"></script>
+</body>
+</html>

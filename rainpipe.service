@@ -1,0 +1,27 @@
+[Unit]
+Description=Rainpipe Bookmark Management Server
+After=network.target
+
+[Service]
+Type=simple
+User=terubo
+WorkingDirectory=/var/git/rainpipe
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="HOME=/home/terubo"
+
+# 環境変数を読み込む
+EnvironmentFile=/var/git/rainpipe/.env
+
+# サーバーを起動
+ExecStart=/usr/bin/ruby /var/git/rainpipe/app.rb -o 0.0.0.0 -p 4568
+
+# 自動再起動の設定
+Restart=always
+RestartSec=10
+
+# ログ設定
+StandardOutput=append:/var/git/rainpipe/logs/rainpipe.log
+StandardError=append:/var/git/rainpipe/logs/rainpipe.error.log
+
+[Install]
+WantedBy=multi-user.target

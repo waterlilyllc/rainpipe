@@ -1,0 +1,46 @@
+<article class="bookmark-item" data-bookmark-id="<%= bookmark['_id'] %>">
+  <div class="bookmark-header">
+    <h3><a href="<%= bookmark['link'] %>" target="_blank"><%= bookmark['title'] %></a></h3>
+    <div class="bookmark-actions">
+      <% destination = @exporter&.determine_destination(bookmark) %>
+      <% if destination == :notion %>
+        <button class="export-btn notion-export" data-bookmark-id="<%= bookmark['_id'] %>" title="Notionに送信">
+          <svg width="20" height="20" viewBox="0 0 100 100" fill="currentColor">
+            <path d="M6.017 4.313l55.333 -4.087c6.797 -0.583 8.543 -0.19 12.817 2.917l17.663 12.443c2.913 2.14 3.883 2.723 3.883 5.053v68.243c0 4.277 -1.553 6.807 -6.99 7.193L24.467 99.967c-4.08 0.193 -6.023 -0.39 -8.16 -3.113L3.3 79.94c-2.333 -3.113 -3.3 -5.443 -3.3 -8.167V11.113c0 -3.497 1.553 -6.413 6.017 -6.8z"/>
+          </svg>
+        </button>
+      <% elsif destination == :obsidian %>
+        <button class="export-btn obsidian-export" data-bookmark-id="<%= bookmark['_id'] %>" title="Obsidianに送信">
+          <svg width="20" height="20" viewBox="0 0 100 100" fill="currentColor">
+            <path d="M44.153,73.87l5.814,8.34L21.123,53.979A28.876,28.876,0,0,1,13.376,19.7L34.462,65.956Z"/>
+            <path d="M78.877,53.979,50.033,82.21,55.847,73.87l9.691-7.914L86.624,19.7A28.876,28.876,0,0,1,78.877,53.979Z"/>
+            <path d="M34.462,65.956l-2.844,7.913L50,100,68.382,73.869l-2.844-7.913L50,78.608Z"/>
+            <path d="M50,0,13.376,19.7l21.086,46.26L50,78.608,65.538,65.956,86.624,19.7Z"/>
+          </svg>
+        </button>
+      <% end %>
+      <span class="created">📅 <%= format_date(bookmark['created']) %></span>
+    </div>
+  </div>
+  
+  <% if bookmark['tags'] && bookmark['tags'].any? %>
+    <div class="bookmark-tags">
+      <% bookmark['tags'].each do |tag| %>
+        <a href="/tags/<%= tag %>" class="tag">#<%= tag %></a>
+      <% end %>
+    </div>
+  <% end %>
+  
+  <% if bookmark['excerpt'] && !bookmark['excerpt'].empty? %>
+    <p class="excerpt"><%= bookmark['excerpt'] %></p>
+  <% end %>
+
+  <% if bookmark['content_data'] && bookmark['content_data']['content'] %>
+    <details class="bookmark-content">
+      <summary>📝 要約を表示 (<%= bookmark['content_data']['word_count'] %>文字)</summary>
+      <div class="content-text">
+        <%= bookmark['content_data']['content'] %>
+      </div>
+    </details>
+  <% end %>
+</article>

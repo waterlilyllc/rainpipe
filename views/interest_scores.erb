@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>関心ワードスコアランキング - Rainpipe</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #2c3e50;
+    }
+    .navigation {
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .nav-link {
+      text-decoration: none;
+      color: #3498db;
+      padding: 8px 16px;
+      border-radius: 6px;
+      background: white;
+      transition: all 0.2s;
+    }
+    .nav-link:hover {
+      background: #3498db;
+      color: white;
+    }
+    .nav-link.active {
+      background: #2c3e50;
+      color: white;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .stat-card h3 {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    .ranking-container {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .ranking-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .ranking-header h2 {
+      font-size: 1.5rem;
+      color: #2c3e50;
+    }
+    .score-legend {
+      display: flex;
+      gap: 15px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+    .keyword-rank {
+      border-bottom: 1px solid #eee;
+      padding: 20px 0;
+      transition: all 0.2s;
+    }
+    .keyword-rank:last-child {
+      border-bottom: none;
+    }
+    .keyword-rank:hover {
+      background: #f8f9fa;
+      margin: 0 -20px;
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+    .rank-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .rank-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .rank-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #666;
+      width: 50px;
+    }
+    .rank-number.top3 {
+      color: #f39c12;
+    }
+    .keyword-name {
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: #2c3e50;
+      text-decoration: none;
+    }
+    .keyword-name:hover {
+      color: #3498db;
+    }
+    .category-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .category-technology { background: #e3f2fd; color: #1976d2; }
+    .category-ai-ml { background: #f3e5f5; color: #7b1fa2; }
+    .category-business { background: #e8f5e9; color: #388e3c; }
+    .category-lifestyle { background: #fff3e0; color: #f57c00; }
+    .category-learning { background: #fce4ec; color: #c2185b; }
+    .total-score {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #2ecc71;
+    }
+    .score-breakdown {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .score-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+    .score-label {
+      font-size: 0.85rem;
+      color: #666;
+    }
+    .score-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bar-container {
+      width: 60px;
+      height: 6px;
+      background: #e9ecef;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      transition: width 0.3s;
+    }
+    .bar-importance { background: #3498db; }
+    .bar-frequency { background: #2ecc71; }
+    .bar-freshness { background: #f39c12; }
+    .bar-trend { background: #e74c3c; }
+    .bar-related { background: #9b59b6; }
+    .bar-context { background: #1abc9c; }
+    .score-value {
+      font-size: 0.85rem;
+      font-weight: 500;
+      min-width: 30px;
+      text-align: right;
+    }
+    .context-box {
+      background: #f0f7ff;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .related-words {
+      margin-top: 15px;
+    }
+    .related-words h4 {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .hot-words-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .hot-word-card {
+      padding: 10px;
+      background: #fff8dc;
+      border-radius: 6px;
+      border-left: 3px solid #ff6b6b;
+    }
+    .hot-word-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    .hot-word-reason {
+      font-size: 0.85rem;
+      color: #666;
+      line-height: 1.4;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    .category-distribution {
+      margin-top: 30px;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .category-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .category-item:last-child {
+      border-bottom: none;
+    }
+    .category-stats {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .refresh-note {
+      text-align: center;
+      color: #666;
+      font-size: 0.85rem;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 関心ワードスコアランキング</h1>
+    
+    <div class="navigation">
+      <a href="/" class="nav-link">📚 ホーム</a>
+      <a href="/interests" class="nav-link">🎯 関心ワード</a>
+      <a href="/interests/scores" class="nav-link active">📊 スコアランキング</a>
+      <a href="/interests/history" class="nav-link">📈 履歴</a>
+    </div>
+    
+    <% if @scored_interests && @scored_interests.any? %>
+      <!-- 統計情報 -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>平均スコア</h3>
+          <div class="stat-value"><%= @statistics[:average_score] %></div>
+        </div>
+        <div class="stat-card">
+          <h3>最高スコア</h3>
+          <div class="stat-value"><%= @statistics[:max_score] %></div>
+        </div>
+        <div class="stat-card">
+          <h3>中央値</h3>
+          <div class="stat-value"><%= @statistics[:median_score] %></div>
+        </div>
+        <div class="stat-card">
+          <h3>総キーワード数</h3>
+          <div class="stat-value"><%= @scored_interests.length %></div>
+        </div>
+      </div>
+      
+      <!-- ランキング -->
+      <div class="ranking-container">
+        <div class="ranking-header">
+          <h2>総合スコアランキング</h2>
+          <div class="score-legend">
+            <div class="legend-item">
+              <div class="legend-color bar-importance"></div>
+              <span>重要度</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color bar-frequency"></div>
+              <span>頻度</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color bar-freshness"></div>
+              <span>新鮮度</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color bar-trend"></div>
+              <span>トレンド</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color bar-related"></div>
+              <span>関連性</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color bar-context"></div>
+              <span>文脈深度</span>
+            </div>
+          </div>
+        </div>
+        
+        <% @scored_interests.each_with_index do |interest, index| %>
+          <div class="keyword-rank">
+            <div class="rank-header">
+              <div class="rank-info">
+                <div class="rank-number <%= index < 3 ? 'top3' : '' %>">
+                  <%= index + 1 %>
+                </div>
+                <div>
+                  <a href="/interests/keyword/<%= interest[:keyword] %>" class="keyword-name">
+                    <%= interest[:keyword] %>
+                  </a>
+                  <span class="category-badge category-<%= interest[:category] %>">
+                    <%= interest[:category] %>
+                  </span>
+                </div>
+              </div>
+              <div class="total-score">
+                <%= interest[:total_score] %>
+              </div>
+            </div>
+            
+            <!-- スコアの内訳 -->
+            <div class="score-breakdown">
+              <div class="score-item">
+                <span class="score-label">重要度</span>
+                <div class="score-bar">
+                  <div class="bar-container">
+                    <div class="bar-fill bar-importance" style="width: <%= interest[:scores][:importance_score] * 10 %>%"></div>
+                  </div>
+                  <span class="score-value"><%= interest[:scores][:importance_score] %></span>
+                </div>
+              </div>
+              <div class="score-item">
+                <span class="score-label">頻度</span>
+                <div class="score-bar">
+                  <div class="bar-container">
+                    <div class="bar-fill bar-frequency" style="width: <%= interest[:scores][:frequency_score] * 10 %>%"></div>
+                  </div>
+                  <span class="score-value"><%= interest[:scores][:frequency_score] %></span>
+                </div>
+              </div>
+              <div class="score-item">
+                <span class="score-label">新鮮度</span>
+                <div class="score-bar">
+                  <div class="bar-container">
+                    <div class="bar-fill bar-freshness" style="width: <%= interest[:scores][:freshness_score] * 10 %>%"></div>
+                  </div>
+                  <span class="score-value"><%= interest[:scores][:freshness_score] %></span>
+                </div>
+              </div>
+              <div class="score-item">
+                <span class="score-label">トレンド</span>
+                <div class="score-bar">
+                  <div class="bar-container">
+                    <div class="bar-fill bar-trend" style="width: <%= interest[:scores][:trend_score] * 10 %>%"></div>
+                  </div>
+                  <span class="score-value"><%= interest[:scores][:trend_score] %></span>
+                </div>
+              </div>
+              <div class="score-item">
+                <span class="score-label">関連性</span>
+                <div class="score-bar">
+                  <div class="bar-container">
+                    <div class="bar-fill bar-related" style="width: <%= interest[:scores][:related_words_score] * 10 %>%"></div>
+                  </div>
+                  <span class="score-value"><%= interest[:scores][:related_words_score] %></span>
+                </div>
+              </div>
+              <div class="score-item">
+                <span class="score-label">文脈深度</span>
+                <div class="score-bar">
+                  <div class="bar-container">
+                    <div class="bar-fill bar-context" style="width: <%= interest[:scores][:context_depth_score] * 10 %>%"></div>
+                  </div>
+                  <span class="score-value"><%= interest[:scores][:context_depth_score] %></span>
+                </div>
+              </div>
+            </div>
+            
+            <% if interest[:context] && !interest[:context].empty? %>
+              <div class="context-box">
+                <%= interest[:context] %>
+              </div>
+            <% end %>
+            
+            <% if interest[:related_hot_words] && interest[:related_hot_words].any? %>
+              <div class="related-words">
+                <h4>🔥 関連する注目ワード</h4>
+                <div class="hot-words-grid">
+                  <% interest[:related_hot_words].first(5).each do |hot_word| %>
+                    <div class="hot-word-card">
+                      <div class="hot-word-name"><%= hot_word['word'] %></div>
+                      <div class="hot-word-reason"><%= hot_word['reason'] %></div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+      
+      <!-- カテゴリ別統計 -->
+      <% if @statistics[:top_categories] && @statistics[:top_categories].any? %>
+        <div class="category-distribution">
+          <h2>📂 カテゴリ別スコア分布</h2>
+          <% @statistics[:top_categories].each do |cat| %>
+            <div class="category-item">
+              <div>
+                <span class="category-badge category-<%= cat[:category] %>">
+                  <%= cat[:category] %>
+                </span>
+              </div>
+              <div class="category-stats">
+                <span>平均スコア: <strong><%= cat[:average_score] %></strong></span>
+                <span>キーワード数: <strong><%= cat[:count] %></strong></span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+      
+      <p class="refresh-note">
+        スコアは重要度(30%)、頻度(20%)、新鮮度(15%)、トレンド(15%)、関連性(10%)、文脈深度(10%)の重み付けで計算されています
+      </p>
+      
+    <% else %>
+      <div class="empty-state">
+        <h2>データがありません</h2>
+        <p>まずはブックマークから関心ワードを抽出してください。</p>
+        <p style="margin-top: 20px;">
+          <code>ruby extract_interests_from_bookmarks.rb</code>
+        </p>
+      </div>
+    <% end %>
+  </div>
+</body>
+</html>

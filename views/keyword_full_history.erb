@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= @keyword %> - 全履歴とアーカイブ</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #2c3e50;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      text-decoration: none;
+      color: #3498db;
+      font-size: 0.9rem;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+    .keyword-status {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .status-item {
+      text-align: center;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+    .status-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    .status-label {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 5px;
+    }
+    .timeline-section {
+      margin-bottom: 40px;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .section-header h2 {
+      font-size: 1.5rem;
+      color: #2c3e50;
+    }
+    .timeline {
+      position: relative;
+      padding-left: 30px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #ddd;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 30px;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -25px;
+      top: 25px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #3498db;
+      border: 2px solid white;
+    }
+    .timeline-item.archived::before {
+      background: #f39c12;
+    }
+    .timeline-date {
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    .importance-chart {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .importance-bar {
+      width: 100px;
+      height: 8px;
+      background: #e9ecef;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .importance-fill {
+      height: 100%;
+      background: linear-gradient(to right, #3498db, #2ecc71);
+    }
+    .articles-section {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .article-list {
+      margin-top: 20px;
+    }
+    .article-item {
+      border-bottom: 1px solid #eee;
+      padding: 20px 0;
+    }
+    .article-item:last-child {
+      border-bottom: none;
+    }
+    .article-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .article-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #2c3e50;
+      text-decoration: none;
+      flex: 1;
+    }
+    .article-title:hover {
+      color: #3498db;
+    }
+    .article-date {
+      font-size: 0.85rem;
+      color: #666;
+      white-space: nowrap;
+      margin-left: 15px;
+    }
+    .article-snippet {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    .article-meta {
+      display: flex;
+      gap: 15px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+    .article-source {
+      background: #f0f7ff;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .scores-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .score-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    .key-points {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border-left: 3px solid #3498db;
+    }
+    .key-points h4 {
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+      color: #2c3e50;
+    }
+    .key-points ul {
+      margin-left: 20px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+    .archived-badge {
+      background: #f39c12;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/interests/archives" class="back-link">← アーカイブ一覧に戻る</a>
+    
+    <h1>📚 <%= @keyword %> - 全履歴</h1>
+    
+    <% if @full_history && @full_history.any? %>
+      <div class="keyword-status">
+        <h2>📊 キーワード統計</h2>
+        <div class="status-grid">
+          <div class="status-item">
+            <div class="status-value"><%= @full_history.length %></div>
+            <div class="status-label">総出現回数</div>
+          </div>
+          <div class="status-item">
+            <div class="status-value"><%= @observations.length %></div>
+            <div class="status-label">観測記録</div>
+          </div>
+          <div class="status-item">
+            <div class="status-value"><%= @observations.sum { |o| o[:articles_count] } %></div>
+            <div class="status-label">関連記事数</div>
+          </div>
+          <div class="status-item">
+            <div class="status-value">
+              <%= @full_history.count { |h| h[:archived] } %>/<%= @full_history.length %>
+            </div>
+            <div class="status-label">アーカイブ済み</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="timeline-section">
+        <div class="section-header">
+          <h2>📅 出現履歴</h2>
+        </div>
+        <div class="timeline">
+          <% @full_history.reverse.each do |history| %>
+            <div class="timeline-item <%= history[:archived] ? 'archived' : '' %>">
+              <div class="timeline-date">
+                <%= Date.parse(history[:date]).strftime('%Y年%m月%d日') %>
+                <% if history[:archived] %>
+                  <span class="archived-badge">アーカイブ</span>
+                <% end %>
+              </div>
+              <div class="importance-chart">
+                <span>重要度:</span>
+                <div class="importance-bar">
+                  <div class="importance-fill" style="width: <%= history[:importance] * 10 %>%"></div>
+                </div>
+                <span><%= history[:importance] %>/10</span>
+              </div>
+              <% if history[:context] && !history[:context].empty? %>
+                <p style="color: #666; font-size: 0.9rem; margin-top: 10px;">
+                  <%= history[:context] %>
+                </p>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+    
+    <% if @observations && @observations.any? %>
+      <div class="articles-section">
+        <div class="section-header">
+          <h2>🔍 関連記事一覧（新しい順）</h2>
+          <span style="color: #666;">全<%= @observations.sum { |o| o[:articles_count] } %>件</span>
+        </div>
+        
+        <div class="article-list">
+          <% @observations.each do |observation| %>
+            <% observation[:articles].each do |article| %>
+              <div class="article-item">
+                <div class="article-header">
+                  <a href="<%= article[:url] %>" target="_blank" class="article-title">
+                    <%= article[:title] %>
+                  </a>
+                  <div class="article-date">
+                    <%= Date.parse(observation[:date]).strftime('%Y/%m/%d') %>
+                    <% if observation[:archived] %>
+                      <span class="archived-badge" style="margin-left: 5px;">アーカイブ</span>
+                    <% end %>
+                  </div>
+                </div>
+                
+                <p class="article-snippet">
+                  <%= article[:snippet] %>
+                </p>
+                
+                <div class="article-meta">
+                  <span class="article-source"><%= article[:source] %></span>
+                  <% if article[:evaluation] %>
+                    <span>関連性: <%= article[:evaluation][:relevance_score] %></span>
+                    <span>新規性: <%= article[:evaluation][:novelty_score] %></span>
+                    <span>重要性: <%= article[:evaluation][:importance_score] %></span>
+                  <% end %>
+                </div>
+                
+                <% if article[:evaluation] && article[:evaluation][:key_points] && article[:evaluation][:key_points].any? %>
+                  <div class="key-points">
+                    <h4>📌 重要ポイント</h4>
+                    <ul>
+                      <% article[:evaluation][:key_points].each do |point| %>
+                        <li><%= point %></li>
+                      <% end %>
+                    </ul>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <div class="empty-state">
+        <p>このキーワードに関する記事はまだ収集されていません</p>
+      </div>
+    <% end %>
+  </div>
+</body>
+</html>
