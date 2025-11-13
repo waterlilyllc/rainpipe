@@ -184,30 +184,31 @@ class KeywordFilteredPDFService
 
     # Task 4.1: バッチ本文取得ジョブ作成
     batch_fetcher = GatherlyBatchFetcher.new
-    job_ids = batch_fetcher.create_crawl_jobs(@bookmarks_without_summary)
+    batch_result = batch_fetcher.create_batch_jobs(@bookmarks_without_summary)
+    job_uuids = batch_result[:job_uuids]
 
-    return if job_ids.empty?
+    return if job_uuids.empty?
 
-    puts "📝 ジョブ数: #{job_ids.length}"
+    puts "📝 ジョブ数: #{job_uuids.length}"
 
     # Task 4.2: ジョブ完了待機
-    job_poller = GatherlyJobPoller.new
-    completed_results = []
+    job_poller = GatherlyJobPoller.new(timeout_seconds: 300)
+    polling_result = job_poller.poll_until_completed(job_uuids)
+    completed_job_uuids = polling_result[:completed]
 
-    job_ids.each do |job_id|
-      result = job_poller.poll_job_status(job_id, timeout: 300)
-      if result[:completed]
-        completed_results << result
-      else
-        puts "⏱️  ジョブがタイムアウト: #{job_id}"
-      end
+    # Note: If Gatherly API is not fully operational, content fetching will be skipped
+    # but the pipeline will continue with existing content
+    if completed_job_uuids.empty?
+      puts "⚠️  Gatherly API ジョブが完了しませんでした（開発環境では API が未実装の可能性があります）"
+      puts "📝 既存コンテンツで処理を継続します"
+      return
     end
 
     # Task 4.3: 結果をマージ
     merger = GatherlyResultMerger.new
-    merger.merge_results(@bookmarks_without_summary, completed_results)
+    merger.merge_results(completed_job_uuids, @bookmarks_without_summary)
 
-    puts "✅ Gatherly 本文取得完了: #{completed_results.length}/#{job_ids.length} 成功"
+    puts "✅ Gatherly 本文取得完了: #{completed_job_uuids.length}/#{job_uuids.length} 成功"
   end
 
   def generate_bookmark_summaries

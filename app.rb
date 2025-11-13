@@ -520,6 +520,7 @@ post '/filtered_pdf/generate' do
 
     # PDF 生成（Task 6）
     pdf_content = {
+      overall_summary: summary_result[:summary],
       summary: summary_result[:summary],
       related_clusters: keywords_result[:related_clusters],
       analysis: analysis_result[:analysis],
