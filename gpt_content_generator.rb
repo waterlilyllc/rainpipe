@@ -36,10 +36,7 @@ class GPTContentGenerator
   def generate_overall_summary(bookmarks, keywords)
     start_time = Time.now
 
-    return {
-      summary: '（全体サマリー生成に失敗しました）',
-      duration_ms: 0
-    } if bookmarks.empty?
+    raise "ブックマークが空です" if bookmarks.empty?
 
     # ブックマークの context を構築
     context = format_bookmarks_for_prompt(bookmarks)
@@ -68,11 +65,8 @@ class GPTContentGenerator
         duration_ms: duration_ms
       }
     else
-      puts "⚠️  全体サマリー生成に失敗。プレースホルダーを使用"
-      {
-        summary: '（全体サマリー生成に失敗しました）',
-        duration_ms: duration_ms
-      }
+      puts "❌ 全体サマリー生成に失敗"
+      raise "GPT API によるサマリー生成失敗"
     end
   end
 
@@ -82,33 +76,21 @@ class GPTContentGenerator
   def extract_related_keywords(bookmarks)
     start_time = Time.now
 
-    return {
-      related_clusters: [],
-      duration_ms: 0
-    } if bookmarks.empty?
+    raise "ブックマークが空です" if bookmarks.empty?
 
     # Task 5.2: GPTKeywordExtractor.extract_keywords_from_bookmarks を呼び出し
-    begin
-      result = @keyword_extractor.extract_keywords_from_bookmarks(bookmarks, 'filtered')
+    result = @keyword_extractor.extract_keywords_from_bookmarks(bookmarks, 'filtered')
 
-      # 返却された related_clusters を取得（各要素は { main_topic: String, related_words: [String] }）
-      related_clusters = result.dig('related_clusters') || []
+    # 返却された related_clusters を取得（各要素は { main_topic: String, related_words: [String] }）
+    related_clusters = result.dig('related_clusters') || []
 
-      duration_ms = ((Time.now - start_time) * 1000).to_i
-      puts "✅ 関連ワード抽出成功: #{related_clusters.length} クラスタ"
+    duration_ms = ((Time.now - start_time) * 1000).to_i
+    puts "✅ 関連ワード抽出成功: #{related_clusters.length} クラスタ"
 
-      {
-        related_clusters: related_clusters,
-        duration_ms: duration_ms
-      }
-    rescue => e
-      puts "⚠️  関連ワード抽出に失敗: #{e.message}"
-      duration_ms = ((Time.now - start_time) * 1000).to_i
-      {
-        related_clusters: [],
-        duration_ms: duration_ms
-      }
-    end
+    {
+      related_clusters: related_clusters,
+      duration_ms: duration_ms
+    }
   end
 
   # Task 5.3: 考察セクション生成（動的生成、キャッシュなし）
@@ -118,10 +100,7 @@ class GPTContentGenerator
   def generate_analysis(bookmarks, keywords)
     start_time = Time.now
 
-    return {
-      analysis: '（考察生成に失敗しました）',
-      duration_ms: 0
-    } if bookmarks.empty?
+    raise "ブックマークが空です" if bookmarks.empty?
 
     # ブックマークの context を構築
     context = format_bookmarks_for_prompt(bookmarks)
@@ -151,11 +130,8 @@ class GPTContentGenerator
         duration_ms: duration_ms
       }
     else
-      puts "⚠️  考察生成に失敗。プレースホルダーを使用"
-      {
-        analysis: '（考察生成に失敗しました）',
-        duration_ms: duration_ms
-      }
+      puts "❌ 考察生成に失敗"
+      raise "GPT API による考察生成失敗"
     end
   end
 
@@ -166,18 +142,18 @@ class GPTContentGenerator
     MAX_RETRIES.times do |attempt|
       begin
         return yield
-      rescue OpenAI::APIError, Net::OpenTimeout, Net::ReadTimeout => e
+      rescue Net::OpenTimeout, Net::ReadTimeout, Net::HTTPError => e
         if attempt < MAX_RETRIES - 1
           # リトライ間隔：1 秒、2 秒、4 秒（exponential backoff）
           delay = INITIAL_RETRY_DELAY * (2 ** attempt)
           puts "⚠️  API エラー（試行 #{attempt + 1}/#{MAX_RETRIES}）: #{e.message}。#{delay} 秒後に再試行..."
           sleep(delay)
         else
-          puts "❌ API 最終失敗。プレースホルダーを返却します"
+          puts "❌ API 最終失敗"
           return nil
         end
-      rescue => e
-        puts "❌ 予期しないエラー: #{e.message}"
+      rescue StandardError => e
+        puts "❌ エラー: #{e.message}"
         return nil
       end
     end
