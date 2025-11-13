@@ -14,6 +14,7 @@
 require 'prawn'
 require 'prawn/table'
 require 'date'
+require_relative 'gatherly_timing'
 
 class KeywordPDFGenerator
   # Task 6.1: Prawn ドキュメント初期化と日本語フォントセットアップ
@@ -127,12 +128,9 @@ class KeywordPDFGenerator
   # @param pdf [Prawn::Document] PDF ドキュメント
   # @param keywords [String] キーワード（カンマ区切り）
   def set_metadata(pdf, keywords)
-    pdf.info.update(
-      Title: "Filtered PDF: #{keywords}",
-      Subject: "Keyword-Filtered PDF Generation",
-      Author: "Rainpipe",
-      Creator: "KeywordPDFGenerator"
-    )
+    # Prawn 2.5.0: メタデータは PDF 生成時のオプションで設定
+    # この実装は Prawn::Document.generate のオプションで行う
+    # ここではスキップ
   end
 
   # Task 6.1: Prawn ドキュメント初期化と日本語フォントセットアップ
