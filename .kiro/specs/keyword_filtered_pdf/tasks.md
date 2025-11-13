@@ -128,8 +128,8 @@ All 7 requirements (1, 2, 2-1, 3, 3-1, 3-2, 3-3, 4, 5, 6, 7) fully covered
 
 ## GPT コンテンツ生成
 
-- [ ] 5. GPT API を使用した 3 段階コンテンツ生成を実装
-- [ ] 5.1 (P) 全体サマリーセクション生成（GPT 呼び出し）
+- [x] 5. GPT API を使用した 3 段階コンテンツ生成を実装
+- [x] 5.1 (P) 全体サマリーセクション生成（GPT 呼び出し）
   - フィルタ済みブックマークの title + excerpt から context を構築
   - プロンプト：「以下のキーワード領域のブックマークを分析して、傾向・重要ポイント・実用的な洞察を含むサマリーを生成してください」（日本語）
   - OpenAI gem を使用して gpt-4o-mini モデルで呼び出し
@@ -137,15 +137,17 @@ All 7 requirements (1, 2, 2-1, 3, 3-1, 3-2, 3-3, 4, 5, 6, 7) fully covered
   - API 呼び出し時間を計測（gpt_overall_summary_duration_ms）
   - GPT API 失敗時は placeholder "（全体サマリー生成に失敗しました）" を使用して処理継続
   - _Requirements: 3-1_
+  - ✅ **実装完了**: gpt_content_generator.rb（17/17 テスト成功）
 
-- [ ] 5.2 (P) 関連ワード抽出セクション生成（GPTKeywordExtractor）
+- [x] 5.2 (P) 関連ワード抽出セクション生成（GPTKeywordExtractor）
   - GPTKeywordExtractor.extract_keywords_from_bookmarks を呼び出し
   - 返却された related_clusters を取得（各要素は { main_topic: String, related_words: [String] }）
   - API 呼び出し時間を計測（gpt_keyword_extraction_duration_ms）
   - 抽出失敗時は empty array として処理継続
   - _Requirements: 3-2_
+  - ✅ **実装完了**: gpt_content_generator.rb（17/17 テスト成功）
 
-- [ ] 5.3 (P) 考察セクション生成（GPT 呼び出し、キャッシュなし）
+- [x] 5.3 (P) 考察セクション生成（GPT 呼び出し、キャッシュなし）
   - フィルタ済みブックマークの context から動的生成
   - プロンプト：「キーワード領域での今後の注目点・実装への示唆・ベストプラクティスを含める考察を生成」（日本語）
   - キャッシュなし（毎回実行時に生成） - Requirement 3-3 で動的生成を厳密に実装
@@ -153,12 +155,14 @@ All 7 requirements (1, 2, 2-1, 3, 3-1, 3-2, 3-3, 4, 5, 6, 7) fully covered
   - API 呼び出し時間を計測（gpt_analysis_duration_ms）
   - GPT API 失敗時は placeholder "（考察生成に失敗しました）" を使用
   - _Requirements: 3-3_
+  - ✅ **実装完了**: gpt_content_generator.rb（17/17 テスト成功）
 
-- [ ] 5.4 (P) GPT API エラーハンドリングと exponential backoff
+- [x] 5.4 (P) GPT API エラーハンドリングと exponential backoff
   - OpenAI::APIError 捕捉して最大 3 回リトライ
   - リトライ間隔：1 秒、2 秒、4 秒（exponential backoff）
   - 最終的に失敗時は log WARN して placeholder text で処理継続
   - _Requirements: 3-1, 3-3_
+  - ✅ **実装完了**: gpt_content_generator.rb（17/17 テスト成功）
 
 ---
 
