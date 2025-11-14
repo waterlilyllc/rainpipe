@@ -200,8 +200,8 @@ This implementation plan translates the technical design into 6 major task group
 
 ## Frontend UI: Log Display & History
 
-- [ ] 6. Build progress log display and historical log viewer
-- [ ] 6.1 Implement LogPanel UI component for execution logs
+- [x] 6. Build progress log display and historical log viewer
+- [x] 6.1 Implement LogPanel UI component for execution logs
   - Create HTML structure: scrollable log container, log entries, history selector
   - Render log entries in reverse chronological order (newest first)
   - Show timestamp (ISO 8601 format), stage, and message for each entry
@@ -211,7 +211,7 @@ This implementation plan translates the technical design into 6 major task group
   - Test with large log sets (1000+ entries) for performance
   - _Requirements: 7.1, 7.2, 7.3_
 
-- [ ] 6.2 (P) Implement history selector for viewing past job logs
+- [x] 6.2 (P) Implement history selector for viewing past job logs
   - Create dropdown/select element showing recent PDF generation jobs (last 10)
   - Display job in format: "keywords | date | status | bookmark_count | duration"
   - On selection change, fetch logs for that job_id and refresh LogPanel
@@ -220,7 +220,7 @@ This implementation plan translates the technical design into 6 major task group
   - Test switching between multiple jobs without UI lag
   - _Requirements: 7.4, 6.2_
 
-- [ ] 6.3 (P) Implement read-only enforcement for completed jobs
+- [x] 6.3 (P) Implement read-only enforcement for completed jobs
   - Hide cancel button when viewing logs of completed/failed/cancelled jobs
   - Hide ProgressPanel and generate button for non-active jobs
   - Display "View only" label for historical jobs

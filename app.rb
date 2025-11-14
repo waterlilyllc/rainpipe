@@ -726,3 +726,66 @@ post '/api/cancel' do
   end
 end
 
+# ============================================================
+# Task 6.2: GET /api/logs/history - Fetch logs for completed jobs
+# ============================================================
+get '/api/logs/history' do
+  content_type :json
+
+  # Task 6.2: Validate job_id parameter
+  job_id = params[:job_id]
+  unless job_id && !job_id.to_s.strip.empty?
+    status 400
+    return { error_type: 'missing_parameter', message: 'job_id parameter is required' }.to_json
+  end
+
+  begin
+    # Get database connection
+    db = SQLite3::Database.new('rainpipe.db')
+    db.results_as_hash = true
+
+    # Task 6.2: Retrieve job record to verify existence
+    job = db.execute(
+      'SELECT * FROM keyword_pdf_generations WHERE uuid = ? LIMIT 1',
+      [job_id]
+    )[0]
+
+    unless job
+      status 404
+      db.close
+      return { error_type: 'job_not_found', message: "Job #{job_id} not found" }.to_json
+    end
+
+    # Task 6.2: Retrieve all logs for this job (not just last 50, for complete history)
+    logs = db.execute(
+      'SELECT stage, event_type, percentage, message, details, timestamp FROM keyword_pdf_progress_logs WHERE job_id = ? ORDER BY timestamp ASC',
+      [job_id]
+    )
+
+    # Task 6.2: Return logs array
+    response = {
+      job_id: job['uuid'],
+      status: job['status'],
+      logs: logs.map { |log|
+        {
+          stage: log['stage'],
+          event_type: log['event_type'],
+          percentage: log['percentage'],
+          message: log['message'],
+          details: log['details'] ? JSON.parse(log['details']) : nil,
+          timestamp: log['timestamp']
+        }
+      }
+    }
+
+    db.close
+    response.to_json
+  rescue SQLite3::DatabaseException => e
+    status 500
+    { error_type: 'database_error', message: e.message }.to_json
+  rescue StandardError => e
+    status 500
+    { error_type: 'server_error', message: e.message }.to_json
+  end
+end
+
