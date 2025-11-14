@@ -143,6 +143,15 @@ class FormIntegration {
       document.querySelector(this.progressPanelSelector)
     );
     progressPanel.update(progress);
+
+    // Task 6.1: Update LogPanel with latest logs
+    const logPanelElement = document.querySelector('#log-panel');
+    if (logPanelElement && progress.logs) {
+      if (!this.logPanel) {
+        this.logPanel = new LogPanel(logPanelElement);
+      }
+      this.logPanel.update(progress.logs);
+    }
   }
 
   // Task 7.1: Handle job completion

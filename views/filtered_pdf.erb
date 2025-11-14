@@ -208,19 +208,52 @@
         </ul>
       </div>
     </div>
+    <!-- Task 6.2: History Selector -->
+    <div id="history-selector-container" style="display: none; margin-top: 2rem;"></div>
+
+    <!-- Task 6.1: LogPanel -->
+    <div id="log-panel" style="display: none; margin-top: 2rem;"></div>
+
+    <!-- Task 5.2: ProgressPanel -->
+    <div id="progress-panel" style="display: none; margin-top: 2rem;"></div>
+
+    <!-- Task 5.4: CompletionPanel -->
+    <div id="completion-panel" style="display: none; margin-top: 2rem;"></div>
+
+    <!-- Error Panel -->
+    <div id="form-error-panel" style="display: none; margin-top: 1rem;">
+      <div class="error-message">
+        <span class="error-message-text"></span>
+      </div>
+    </div>
   </main>
 
   <footer>
-    <p><a href="/">ホーム</a> | <a href="/weekly">週間表示</a> | <a href="/monthly">月間表示</a> | <a href="/search">検索</a></p>
+    <p><a href="/">ホーム</a> | <a href="/weekly">週間表示</a> | <a href="/月間表示</a> | <a href="/search">検索</a></p>
   </footer>
 
+  <!-- Task 5.1: PollingManager Script -->
+  <script src="/js/polling_manager.js"></script>
+  <!-- Task 5.2: ProgressPanel Script -->
+  <script src="/js/progress_panel.js"></script>
+  <!-- Task 5.4: CompletionPanel Script -->
+  <script src="/js/completion_panel.js"></script>
+  <!-- Task 6.1: LogPanel Script -->
+  <script src="/js/log_panel.js"></script>
+  <!-- Task 6.2: HistorySelector Script -->
+  <script src="/js/history_selector.js"></script>
+  <!-- Task 6.3: ReadOnlyEnforcer Script -->
+  <script src="/js/read_only_enforcer.js"></script>
+  <!-- Task 7.1-7.3: FormIntegration Script -->
+  <script src="/js/form_integration.js"></script>
+
   <script>
-    // デフォルト日付を設定
+    // Initialize all components (Task 7.1-7.3: FormIntegration)
     document.addEventListener('DOMContentLoaded', function() {
+      // Set default dates
       const dateStartInput = document.getElementById('date_start');
       const dateEndInput = document.getElementById('date_end');
 
-      // 値が入っていなければデフォルト値を設定
       if (!dateStartInput.value) {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
@@ -231,26 +264,20 @@
         const today = new Date();
         dateEndInput.value = today.toISOString().split('T')[0];
       }
-    });
 
-    // フォーム送信時の基本バリデーション
-    document.querySelector('form').addEventListener('submit', function(e) {
-      const keywords = document.getElementById('keywords').value.trim();
+      // Initialize FormIntegration (Task 7.1-7.3)
+      // This handles AJAX form submission and integrates all progress components
+      window.formIntegration = new FormIntegration({
+        formSelector: 'form',
+        progressPanelSelector: '#progress-panel',
+        completionPanelSelector: '#completion-panel',
+        errorPanelSelector: '#form-error-panel',
+        logPanelSelector: '#log-panel',
+        historySelectorContainer: '#history-selector-container'
+      });
 
-      if (!keywords) {
-        e.preventDefault();
-        alert('キーワードを入力してください');
-        return false;
-      }
-
-      const dateStart = document.getElementById('date_start').value;
-      const dateEnd = document.getElementById('date_end').value;
-
-      if (dateStart && dateEnd && dateStart > dateEnd) {
-        e.preventDefault();
-        alert('開始日は終了日より前である必要があります');
-        return false;
-      }
+      // Optional: Initialize history selector if viewing past jobs
+      // This would be done by FormIntegration when needed
     });
   </script>
 </body>
