@@ -266,8 +266,8 @@ This implementation plan translates the technical design into 6 major task group
 
 ## Integration & End-to-End Testing
 
-- [ ] 8. Integration testing and system validation
-- [ ] 8.1 Test end-to-end PDF generation with progress tracking
+- [x] 8. Integration testing and system validation
+- [x] 8.1 Test end-to-end PDF generation with progress tracking
   - Load /filtered_pdf form
   - Submit with valid keywords and dates
   - Verify immediate response with job_id (no blocking)
@@ -278,7 +278,7 @@ This implementation plan translates the technical design into 6 major task group
   - Verify job record saved in database with all metadata
   - _Requirements: 1.1, 1.2, 1.4, 4.3, 5.1, 5.2, 5.4_
 
-- [ ] 8.2 (P) Test concurrent job execution
+- [x] 8.2 (P) Test concurrent job execution
   - Start two PDF generation jobs simultaneously (different keywords/dates)
   - Verify each job receives unique job_id
   - Verify progress polling returns correct job state for each
@@ -287,7 +287,7 @@ This implementation plan translates the technical design into 6 major task group
   - Verify logs for each job tracked independently
   - _Requirements: 6.1, 6.2_
 
-- [ ] 8.3 (P) Test job cancellation workflow
+- [x] 8.3 (P) Test job cancellation workflow
   - Start PDF generation job
   - Click cancel button before completion
   - Verify confirmation dialog appears
@@ -298,7 +298,7 @@ This implementation plan translates the technical design into 6 major task group
   - Test cancellation at different stages (filtering, fetching, summarization)
   - _Requirements: 5.3, 4.3_
 
-- [ ] 8.4 (P) Test error handling and recovery
+- [x] 8.4 (P) Test error handling and recovery
   - Simulate Gatherly API timeout during content fetching
   - Verify job marked as 'failed' with appropriate error_message
   - Verify error_info displayed in ProgressPanel with suggested_remedy
@@ -307,7 +307,7 @@ This implementation plan translates the technical design into 6 major task group
   - Test multiple error types: API timeout, rate limit, email failure, invalid input
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 8.5 (P) Test progress log display and history
+- [x] 8.5 (P) Test progress log display and history
   - During job execution, verify logs appear in LogPanel in real-time
   - Verify auto-scroll keeps latest entry visible
   - Verify timestamp, stage, and message displayed for each log
@@ -316,7 +316,7 @@ This implementation plan translates the technical design into 6 major task group
   - Test with multiple historical jobs (at least 5)
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 8.6 (P) Test input validation and error messages
+- [x] 8.6 (P) Test input validation and error messages
   - Submit form with empty keywords → verify validation error before job creation
   - Submit form with invalid date range (end before start) → verify error message
   - Submit form with send_to_kindle=true but empty email → verify error
