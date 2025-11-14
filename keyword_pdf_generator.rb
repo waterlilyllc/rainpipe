@@ -15,6 +15,7 @@ require 'prawn'
 require 'prawn/table'
 require 'date'
 require_relative 'gatherly_timing'
+require_relative 'progress_reporter'
 
 class KeywordPDFGenerator
   # Task 6.1: Prawn ドキュメント初期化と日本語フォントセットアップ
@@ -53,6 +54,7 @@ class KeywordPDFGenerator
   # @return [Hash] { pdf_path, duration_ms, file_size }
   def generate(content, output_path)
     timing = GatherlyTiming.new
+    ProgressReporter.progress(nil, "PDF生成開始", :document)
 
     output_path ||= generate_default_path(content[:keywords], content[:date_range])
 
@@ -100,6 +102,8 @@ class KeywordPDFGenerator
     # Task 6.9: PDF レンダリング時間計測
     timing.log_elapsed('PDF レンダリング')
 
+    ProgressReporter.success("PDF生成完了: #{output_path} (#{(file_size / 1024.0).round(2)} KB)")
+
     {
       pdf_path: output_path,
       duration_ms: duration_ms,
@@ -138,12 +142,12 @@ class KeywordPDFGenerator
     size_mb = size_bytes / (1024 * 1024.0)
 
     if size_mb > 25
-      puts "❌ PDF ファイルサイズが大きすぎます: #{size_mb.round(2)} MB（最大 25 MB）"
+      ProgressReporter.error("PDF ファイルサイズ超過: #{size_mb.round(2)} MB（最大 25 MB）")
       raise "PDF ファイルサイズ制限超過"
     elsif size_mb > 20
-      puts "⚠️  PDF ファイルサイズが 20 MB を超えています: #{size_mb.round(2)} MB"
+      ProgressReporter.warning("PDF ファイルサイズが大きめです: #{size_mb.round(2)} MB（推奨 20 MB以下）")
     else
-      puts "✅ PDF ファイルサイズ: #{size_mb.round(2)} MB"
+      ProgressReporter.success("PDF ファイルサイズ正常: #{size_mb.round(2)} MB")
     end
   end
 

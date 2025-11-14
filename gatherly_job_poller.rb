@@ -9,6 +9,7 @@
 #   - タイムアウト時は warning log を出力して処理継続
 
 require_relative 'gatherly_client'
+require_relative 'progress_reporter'
 
 class GatherlyJobPoller
   def initialize(timeout_seconds: 300, poll_interval_seconds: 2)
@@ -33,7 +34,7 @@ class GatherlyJobPoller
     overall_start_time = Time.now
 
     job_uuids.each do |job_uuid|
-      puts "⏳ ジョブ #{job_uuid} のポーリングを開始（ジョブ個別タイムアウト: #{@timeout_seconds} 秒）"
+      ProgressReporter.progress(nil, "ジョブポーリング開始: #{job_uuid} (タイムアウト: #{@timeout_seconds}s)", :wait)
 
       job_completed = false
       poll_count = 0
@@ -46,15 +47,15 @@ class GatherlyJobPoller
         status_result = @gatherly_client.get_job_status(job_uuid)
 
         if status_result[:error]
-          puts "⚠️  ジョブ #{job_uuid} の状態確認に失敗: #{status_result[:error]}"
+          ProgressReporter.warning("ジョブ #{job_uuid} の状態確認に失敗: #{status_result[:error]}")
         elsif status_result[:status] == 'completed'
-          puts "✅ ジョブ #{job_uuid} が完了"
+          ProgressReporter.success("ジョブ #{job_uuid} が完了")
           completed_jobs << job_uuid
           job_completed = true
           break
         else
           current_status = status_result[:status] || 'unknown'
-          puts "⏳ ジョブ #{job_uuid} ステータス: #{current_status}（ポーリング #{poll_count} 回）"
+          ProgressReporter.counter(poll_count, (@timeout_seconds / @poll_interval_seconds).to_i, "ジョブ #{job_uuid} ステータス: #{current_status}", :wait)
         end
 
         # 2 秒間隔でポーリング
@@ -63,7 +64,7 @@ class GatherlyJobPoller
 
       unless job_completed
         # タイムアウト判定
-        puts "⏱️  本文取得ジョブがタイムアウト。サマリー未取得として継続"
+        ProgressReporter.warning("本文取得ジョブがタイムアウト（#{@timeout_seconds}s）。既存コンテンツで処理を継続します")
         timed_out_jobs << job_uuid
       end
     end

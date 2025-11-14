@@ -11,6 +11,7 @@
 require 'net/http'
 require 'json'
 require_relative 'gpt_keyword_extractor'
+require_relative 'progress_reporter'
 
 class GPTContentGenerator
   OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
@@ -59,13 +60,13 @@ class GPTContentGenerator
     duration_ms = ((Time.now - start_time) * 1000).to_i
 
     if result
-      puts "✅ 全体サマリー生成成功"
+      ProgressReporter.success("全体サマリー生成成功 (#{duration_ms}ms)")
       {
         summary: result,
         duration_ms: duration_ms
       }
     else
-      puts "❌ 全体サマリー生成に失敗"
+      ProgressReporter.error("全体サマリー生成失敗")
       raise "GPT API によるサマリー生成失敗"
     end
   end
@@ -85,7 +86,7 @@ class GPTContentGenerator
     related_clusters = result.dig('related_clusters') || []
 
     duration_ms = ((Time.now - start_time) * 1000).to_i
-    puts "✅ 関連ワード抽出成功: #{related_clusters.length} クラスタ"
+    ProgressReporter.success("関連ワード抽出成功: #{related_clusters.length} クラスタ (#{duration_ms}ms)")
 
     {
       related_clusters: related_clusters,
@@ -124,13 +125,13 @@ class GPTContentGenerator
     duration_ms = ((Time.now - start_time) * 1000).to_i
 
     if result
-      puts "✅ 考察生成成功"
+      ProgressReporter.success("考察生成成功 (#{duration_ms}ms)")
       {
         analysis: result,
         duration_ms: duration_ms
       }
     else
-      puts "❌ 考察生成に失敗"
+      ProgressReporter.error("考察生成失敗")
       raise "GPT API による考察生成失敗"
     end
   end
@@ -146,14 +147,14 @@ class GPTContentGenerator
         if attempt < MAX_RETRIES - 1
           # リトライ間隔：1 秒、2 秒、4 秒（exponential backoff）
           delay = INITIAL_RETRY_DELAY * (2 ** attempt)
-          puts "⚠️  API エラー（試行 #{attempt + 1}/#{MAX_RETRIES}）: #{e.message}。#{delay} 秒後に再試行..."
+          ProgressReporter.warning("API エラー（試行 #{attempt + 1}/#{MAX_RETRIES}）: #{e.message}。#{delay}s 後に再試行...")
           sleep(delay)
         else
-          puts "❌ API 最終失敗"
+          ProgressReporter.error("API 最終失敗")
           return nil
         end
       rescue StandardError => e
-        puts "❌ エラー: #{e.message}"
+        ProgressReporter.error("エラー", e.message)
         return nil
       end
     end

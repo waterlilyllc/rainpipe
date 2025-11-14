@@ -16,6 +16,7 @@ require_relative 'bookmark_summary_generator'
 require_relative 'gatherly_batch_fetcher'
 require_relative 'gatherly_job_poller'
 require_relative 'gatherly_result_merger'
+require_relative 'progress_reporter'
 
 class KeywordFilteredPDFService
   # 初期化
@@ -41,12 +42,13 @@ class KeywordFilteredPDFService
   # メインの実行メソッド
   # @return [Hash] { status: 'success' or 'error', bookmarks: [], missing_summaries: [], error: String }
   def execute
-    puts "🔍 キーワード別 PDF 生成開始"
-    puts "📝 キーワード: #{@normalized_keywords.join(', ')}"
-    puts "📅 期間: #{@date_range[:start]} ～ #{@date_range[:end]}"
+    ProgressReporter.progress(nil, "キーワード別 PDF 生成開始", :info)
+    ProgressReporter.indented("キーワード: #{@normalized_keywords.join(', ')}")
+    ProgressReporter.indented("期間: #{@date_range[:start]} ～ #{@date_range[:end]}")
 
     # Task 3.1: RaindropClient を使用したフィルタリング
     unless filter_bookmarks_by_keywords_and_date
+      ProgressReporter.error("フィルタリング失敗", @error)
       return error_result
     end
 
@@ -58,6 +60,8 @@ class KeywordFilteredPDFService
 
     # Task 7.1: Gatherly で取得した content から GPT でサマリーを生成
     generate_bookmark_summaries
+
+    ProgressReporter.success("全処理完了")
 
     {
       status: 'success',
@@ -145,6 +149,8 @@ class KeywordFilteredPDFService
 
   # Task 3.1: RaindropClient を使用したキーワード + 日付範囲フィルタリング
   def filter_bookmarks_by_keywords_and_date
+    ProgressReporter.progress(nil, "Raindrop.io からブックマーク取得中", :folder)
+
     # RaindropClient でブックマークを取得
     client = RaindropClient.new
     start_date = parse_date(@date_range[:start])
@@ -158,8 +164,7 @@ class KeywordFilteredPDFService
     end
 
     # Task 3.1: ログ出力
-    puts "📅 期間: #{@date_range[:start]} ～ #{@date_range[:end]}"
-    puts "📚 #{@filtered_bookmarks.length} 件のブックマークをフィルタ"
+    ProgressReporter.counter(@filtered_bookmarks.length, all_bookmarks.length, "ブックマークをフィルタ", :folder)
 
     # キャッシュから以前取得した summary を復元
     restore_cached_summaries(@filtered_bookmarks)
@@ -170,21 +175,27 @@ class KeywordFilteredPDFService
       return false
     end
 
+    ProgressReporter.success("フィルタリング完了: #{@filtered_bookmarks.length} 件")
+
     true
   end
 
-  # キャッシュ（data/ 内の JSON）から summary を復元
+  # キャッシュ（data/ 内の PDF データ JSON）から summary を復元
   def restore_cached_summaries(bookmarks)
-    cache_files = Dir.glob(File.join('data', '*.json')).sort_by { |f| File.mtime(f) }.reverse
+    # pdf_data_*.json ファイルを探す（最新のものから）
+    cache_files = Dir.glob(File.join('data', 'pdf_data_*.json')).sort_by { |f| File.mtime(f) }.reverse
+
+    restored_count = 0
 
     cache_files.each do |cache_file|
       begin
         cached_data = JSON.parse(File.read(cache_file))
-        cached_bookmarks = cached_data.is_a?(Array) ? cached_data : cached_data['bookmarks'] || []
+        cached_bookmarks = cached_data['bookmarks'] || []
 
         bookmarks.each do |bookmark|
           bookmark_url = bookmark['url'] || bookmark['link']
           next unless bookmark_url
+          next if bookmark['summary'] && bookmark['summary'].to_s.strip.length > 10  # 既に summary がある場合スキップ
 
           # キャッシュから同じ URL のブックマークを探す
           cached_bookmark = cached_bookmarks.find do |cb|
@@ -195,13 +206,20 @@ class KeywordFilteredPDFService
           # キャッシュから summary を復元
           if cached_bookmark && cached_bookmark['summary'] && cached_bookmark['summary'].to_s.strip.length > 10
             bookmark['summary'] = cached_bookmark['summary']
-            puts "  📥 キャッシュから復元: #{bookmark['title'][0..50]}..."
+            restored_count += 1
           end
         end
       rescue => e
         # キャッシュ読み込み失敗は無視
         next
       end
+
+      # すべてのブックマークが復元できたら終了
+      break if bookmarks.all? { |b| b['summary'] && b['summary'].to_s.strip.length > 10 }
+    end
+
+    if restored_count > 0
+      puts "📥 キャッシュから #{restored_count} 件の summary を復元"
     end
   end
 
@@ -227,9 +245,9 @@ class KeywordFilteredPDFService
 
     count = @bookmarks_without_summary.length
     if count > 0
-      puts "⚠️  #{count} 件のブックマークのサマリーが未取得"
+      ProgressReporter.warning("#{count} 件のブックマークの本文が未取得")
     else
-      puts "✅ すべてのブックマークのサマリーが取得済み"
+      ProgressReporter.success("すべてのブックマークの本文が取得済み")
     end
   end
 
@@ -242,7 +260,7 @@ class KeywordFilteredPDFService
   def fetch_bookmarks_content_from_gatherly
     return if @bookmarks_without_summary.empty?
 
-    puts "🌐 Gatherly API で本文取得開始"
+    ProgressReporter.progress(nil, "Gatherly API で本文取得開始", :globe)
 
     # Task 4.1: バッチ本文取得ジョブ作成
     batch_fetcher = GatherlyBatchFetcher.new
@@ -251,7 +269,7 @@ class KeywordFilteredPDFService
 
     return if job_uuids.empty?
 
-    puts "📝 ジョブ数: #{job_uuids.length}"
+    ProgressReporter.progress(nil, "ジョブ作成完了: #{job_uuids.length} 件", :info)
 
     # Task 4.2: ジョブ完了待機
     job_poller = GatherlyJobPoller.new(timeout_seconds: 300)
@@ -261,8 +279,8 @@ class KeywordFilteredPDFService
     # Note: If Gatherly API is not fully operational, content fetching will be skipped
     # but the pipeline will continue with existing content
     if completed_job_uuids.empty?
-      puts "⚠️  Gatherly API ジョブが完了しませんでした（開発環境では API が未実装の可能性があります）"
-      puts "📝 既存コンテンツで処理を継続します"
+      ProgressReporter.warning("Gatherly API ジョブが完了しませんでした（開発環境では API が未実装の可能性があります）")
+      ProgressReporter.progress(nil, "既存コンテンツで処理を継続します", :info)
       return
     end
 
@@ -287,24 +305,23 @@ class KeywordFilteredPDFService
       if merged && merged['summary'] && merged['summary'].to_s.strip.length > 10
         bookmark['summary'] = merged['summary']
         updated_count += 1
-        puts "  ✓ #{bookmark['title']}: サマリー統合"
+        ProgressReporter.indented("✓ #{bookmark['title']}: コンテンツ統合")
       end
     end
 
-    puts "✅ Gatherly 本文取得完了: #{completed_job_uuids.length}/#{job_uuids.length} 成功"
-    puts "✅ Gatherly から取得した本文を #{updated_count} 件のブックマークに統合完了"
+    ProgressReporter.success("本文取得完了: #{completed_job_uuids.length}/#{job_uuids.length} 成功（#{updated_count} 件統合）")
   end
 
   def generate_bookmark_summaries
     return if @filtered_bookmarks.empty?
 
-    puts "🔄 ブックマークサマリー生成開始"
+    ProgressReporter.progress(nil, "ブックマークサマリー生成開始", :loop)
 
     # Gatherly から取得した content (summary フィールドに入っている) を確認
     bookmarks_with_content = @filtered_bookmarks.select { |b| b['summary'] && !b['summary'].to_s.strip.empty? }
 
     if bookmarks_with_content.empty?
-      puts "⚠️  コンテンツを持つブックマークがありません。サマリー生成をスキップ"
+      ProgressReporter.warning("コンテンツを持つブックマークがありません。サマリー生成をスキップ")
       return
     end
 
@@ -319,15 +336,15 @@ class KeywordFilteredPDFService
 
         if summary && summary.to_s.strip.length > 10
           bookmark['summary'] = summary
-          puts "  ✓ [#{idx + 1}/#{bookmarks_with_content.length}] サマリー生成: #{bookmark['title'][0..50]}..."
+          ProgressReporter.counter(idx + 1, bookmarks_with_content.length, "サマリー生成: #{bookmark['title'][0..50]}...", :loop)
         else
-          puts "  ⚠️  [#{idx + 1}/#{bookmarks_with_content.length}] サマリー生成失敗: #{bookmark['title'][0..50]}..."
+          ProgressReporter.warning("[#{idx + 1}/#{bookmarks_with_content.length}] サマリー生成失敗: #{bookmark['title'][0..50]}...")
         end
       rescue => e
-        puts "  ❌ [#{idx + 1}/#{bookmarks_with_content.length}] エラー: #{e.message}"
+        ProgressReporter.error("[#{idx + 1}/#{bookmarks_with_content.length}] エラー", e.message)
       end
     end
 
-    puts "✅ ブックマークサマリー生成完了: #{bookmarks_with_content.length} 件"
+    ProgressReporter.success("サマリー生成完了: #{bookmarks_with_content.length} 件")
   end
 end
