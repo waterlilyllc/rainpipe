@@ -3,6 +3,7 @@ require 'dotenv'
 Dotenv.load
 
 require 'date'
+require_relative 'progress_reporter'
 require_relative 'keyword_filtered_pdf_service'
 require_relative 'gpt_content_generator'
 require_relative 'keyword_pdf_generator'
