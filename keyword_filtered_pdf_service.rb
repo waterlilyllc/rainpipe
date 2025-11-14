@@ -17,16 +17,19 @@ require_relative 'gatherly_batch_fetcher'
 require_relative 'gatherly_job_poller'
 require_relative 'gatherly_result_merger'
 require_relative 'progress_reporter'
+require_relative 'progress_callback'
 
 class KeywordFilteredPDFService
   # 初期化
   # @param keywords [String, Array] キーワード（カンマまたは改行区切り、または配列）
   # @param date_start [Date, String] フィルタ開始日（nil の場合は 3 ヶ月前）
   # @param date_end [Date, String] フィルタ終了日（nil の場合は今日）
-  def initialize(keywords:, date_start: nil, date_end: nil)
+  # @param progress_callback [ProgressCallback, nil] 進捗更新用コールバック（nil で無視）
+  def initialize(keywords:, date_start: nil, date_end: nil, progress_callback: nil)
     @original_keywords = keywords
     @date_start = date_start
     @date_end = date_end
+    @progress_callback = progress_callback || ProgressCallback.null_callback
 
     # Task 3.2: キーワードの正規化
     @normalized_keywords = normalize_keywords(keywords)
@@ -49,17 +52,42 @@ class KeywordFilteredPDFService
     # Task 3.1: RaindropClient を使用したフィルタリング
     unless filter_bookmarks_by_keywords_and_date
       ProgressReporter.error("フィルタリング失敗", @error)
+      @progress_callback.report_event('error', "フィルタリング失敗: #{@error}")
       return error_result
     end
 
     # Task 3.3: ContentChecker でサマリー未取得を検出
     detect_missing_summaries
 
+    # Task 3.2: Progress callback に filtering ステージを報告
+    @progress_callback.report_stage('filtering', 25, {
+      keywords: @normalized_keywords,
+      bookmarks_retrieved: @filtered_bookmarks.length,
+      date_range: {
+        start: @date_range[:start],
+        end: @date_range[:end]
+      }
+    })
+
     # Task 4.1-4.3: Gatherly で本文取得
     fetch_bookmarks_content_from_gatherly
 
+    # Task 3.2: Progress callback に content_fetching ステージを報告
+    bookmarks_with_content = @filtered_bookmarks.select { |b| b['summary'] && !b['summary'].to_s.strip.empty? }
+    @progress_callback.report_stage('content_fetching', 40, {
+      bookmarks_with_content: bookmarks_with_content.length,
+      total_bookmarks: @filtered_bookmarks.length
+    })
+
     # Task 7.1: Gatherly で取得した content から GPT でサマリーを生成
     generate_bookmark_summaries
+
+    # Task 3.2: Progress callback に summarization ステージを報告
+    bookmarks_with_summary = @filtered_bookmarks.select { |b| b['summary'] && b['summary'].to_s.strip.length > 10 }
+    @progress_callback.report_stage('summarization', 80, {
+      bookmarks_summarized: bookmarks_with_summary.length,
+      total_bookmarks: @filtered_bookmarks.length
+    })
 
     ProgressReporter.success("全処理完了")
 

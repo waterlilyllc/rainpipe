@@ -16,6 +16,8 @@ require_relative 'gpt_content_generator'
 require_relative 'keyword_pdf_generator'
 require_relative 'kindle_email_sender'
 require_relative 'pdf_generation_history'
+require_relative 'job_queue'
+require_relative 'progress_callback'
 
 set :port, 4567
 set :bind, '0.0.0.0'
@@ -444,12 +446,20 @@ post '/filtered_pdf/generate' do
   # バリデーション（Task 2.2）
   validator = FormValidator.new
   unless validator.validate(keywords: keywords, date_start: date_start, date_end: date_end)
-    # バリデーション失敗時はエラーメッセージとともにフォームに戻す
+    # Task 7.2: バリデーション失敗時の処理 - AJAX対応
+    error_message = validator.errors.join("; ")
+
+    # AJAX リクエストの場合は JSON を返す
+    if request.xhr? || params[:_format] == 'json'
+      return { error: error_message }.to_json
+    end
+
+    # 非AJAX時は従来通りHTMLを返す
     @keywords = keywords
     @date_start = date_start
     @date_end = date_end
     @send_to_kindle = send_to_kindle
-    @error_message = validator.errors.join("\n")
+    @error_message = error_message
     @success_message = nil
     return erb :filtered_pdf
   end
@@ -586,6 +596,133 @@ post '/filtered_pdf/generate' do
     @error_message = "エラーが発生しました: #{e.message}"
     @success_message = nil
     erb :filtered_pdf
+  end
+end
+
+# ============================================================
+# Task 1.1: GET /api/progress - Progress tracking API endpoint
+# ============================================================
+get '/api/progress' do
+  content_type :json
+
+  # Task 1.1: Validate job_id parameter
+  job_id = params[:job_id]
+  unless job_id && !job_id.to_s.strip.empty?
+    status 400
+    return { error_type: 'missing_parameter', message: 'job_id parameter is required' }.to_json
+  end
+
+  begin
+    # Get database connection
+    db = SQLite3::Database.new('rainpipe.db')
+    db.results_as_hash = true
+
+    # Task 1.1: Retrieve job record from keyword_pdf_generations table by UUID
+    job = db.execute(
+      'SELECT * FROM keyword_pdf_generations WHERE uuid = ? LIMIT 1',
+      [job_id]
+    )[0]
+
+    unless job
+      status 404
+      db.close
+      return { error_type: 'job_not_found', message: "Job #{job_id} not found" }.to_json
+    end
+
+    # Task 1.1: Aggregate progress logs from keyword_pdf_progress_logs table (last 50 entries, ordered by timestamp DESC)
+    logs = db.execute(
+      'SELECT stage, event_type, percentage, message, details, timestamp FROM keyword_pdf_progress_logs WHERE job_id = ? ORDER BY timestamp DESC LIMIT 50',
+      [job_id]
+    )
+
+    # Task 1.1: Return ProgressResponse JSON schema
+    response = {
+      status: job['status'],
+      job_id: job['uuid'],
+      current_stage: job['current_stage'],
+      current_percentage: job['current_percentage'],
+      stage_details: {
+        keywords: job['keywords'],
+        bookmark_count: job['bookmark_count'],
+        date_range: {
+          start: job['date_range_start'],
+          end: job['date_range_end']
+        }
+      },
+      logs: logs.map { |log|
+        {
+          stage: log['stage'],
+          event_type: log['event_type'],
+          percentage: log['percentage'],
+          message: log['message'],
+          details: log['details'] ? JSON.parse(log['details']) : nil,
+          timestamp: log['timestamp']
+        }
+      },
+      error_info: job['error_message'] ? { message: job['error_message'], status: job['status'] } : nil
+    }
+
+    db.close
+    response.to_json
+  rescue SQLite3::DatabaseException => e
+    status 500
+    { error_type: 'database_error', message: e.message }.to_json
+  rescue StandardError => e
+    status 500
+    { error_type: 'server_error', message: e.message }.to_json
+  end
+end
+
+# ============================================================
+# Task 1.2: POST /api/cancel - Cancel job endpoint
+# ============================================================
+post '/api/cancel' do
+  content_type :json
+
+  # Task 1.2: Accept job_id parameter
+  job_id = params[:job_id]
+  unless job_id && !job_id.to_s.strip.empty?
+    status 400
+    return { error_type: 'missing_parameter', message: 'job_id parameter is required' }.to_json
+  end
+
+  begin
+    # Get database connection
+    db = SQLite3::Database.new('rainpipe.db')
+    db.results_as_hash = true
+
+    # Task 1.2: Query keyword_pdf_generations table to verify job exists
+    job = db.execute(
+      'SELECT * FROM keyword_pdf_generations WHERE uuid = ? LIMIT 1',
+      [job_id]
+    )[0]
+
+    unless job
+      status 404
+      db.close
+      return { success: false, message: "Job #{job_id} not found" }.to_json
+    end
+
+    # Task 1.2: Handle race condition if job already completed
+    if job['status'] == 'completed' || job['status'] == 'failed'
+      db.close
+      return { success: true, message: "Job already completed with status: #{job['status']}" }.to_json
+    end
+
+    # Task 1.2: Set cancellation_flag = true in database
+    db.execute(
+      'UPDATE keyword_pdf_generations SET cancellation_flag = 1, updated_at = ? WHERE uuid = ?',
+      [Time.now.utc.iso8601, job_id]
+    )
+
+    db.close
+    { success: true, message: "Job #{job_id} cancelled successfully" }.to_json
+  rescue SQLite3::DatabaseException => e
+    status 500
+    { error_type: 'database_error', message: e.message }.to_json
+  rescue StandardError => e
+    status 500
+    { error_type: 'server_error', message: e.message }.to_json
   end
 end
 

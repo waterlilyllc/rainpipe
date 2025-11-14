@@ -16,6 +16,7 @@ require 'prawn/table'
 require 'date'
 require_relative 'gatherly_timing'
 require_relative 'progress_reporter'
+require_relative 'progress_callback'
 
 class KeywordPDFGenerator
   # Task 6.1: Prawn ドキュメント初期化と日本語フォントセットアップ
@@ -30,8 +31,9 @@ class KeywordPDFGenerator
   CHUNK_SIZE = 50  # Task 6.6: ブックマーク処理単位
   BOOKMARK_PAGE_SIZE = 3  # 各ページごとのブックマーク数
 
-  def initialize
+  def initialize(progress_callback = nil)
     @start_time = Time.now
+    @progress_callback = progress_callback || ProgressCallback.null_callback
   end
 
   # Markdown フォーマットをプレーンテキストに変換
@@ -55,6 +57,12 @@ class KeywordPDFGenerator
   def generate(content, output_path)
     timing = GatherlyTiming.new
     ProgressReporter.progress(nil, "PDF生成開始", :document)
+
+    # Task 3.4: Progress callback に PDF generation ステージを報告
+    @progress_callback.report_stage('pdf_generation', 0, {
+      keywords: content[:keywords],
+      bookmark_count: content[:bookmarks].length
+    })
 
     output_path ||= generate_default_path(content[:keywords], content[:date_range])
 
@@ -103,6 +111,12 @@ class KeywordPDFGenerator
     timing.log_elapsed('PDF レンダリング')
 
     ProgressReporter.success("PDF生成完了: #{output_path} (#{(file_size / 1024.0).round(2)} KB)")
+
+    # Task 3.4: Progress callback に PDF generation 完了を報告
+    @progress_callback.report_stage('pdf_generation', 90, {
+      file_size: file_size,
+      duration_ms: duration_ms
+    })
 
     {
       pdf_path: output_path,

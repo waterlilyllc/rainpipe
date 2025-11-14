@@ -12,16 +12,18 @@ require 'net/http'
 require 'json'
 require_relative 'gpt_keyword_extractor'
 require_relative 'progress_reporter'
+require_relative 'progress_callback'
 
 class GPTContentGenerator
   OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
   MAX_RETRIES = 3
   INITIAL_RETRY_DELAY = 1  # 秒
 
-  def initialize(api_key = ENV['OPENAI_API_KEY'], use_mock = false)
+  def initialize(api_key = ENV['OPENAI_API_KEY'], use_mock = false, progress_callback = nil)
     @api_key = api_key
     @model = ENV['GPT_MODEL'] || 'gpt-4o-mini'
     @use_mock = use_mock
+    @progress_callback = progress_callback || ProgressCallback.null_callback
 
     if use_mock
       @keyword_extractor = Object.const_defined?(:MockGPTKeywordExtractor) ? MockGPTKeywordExtractor.new : nil
@@ -38,6 +40,12 @@ class GPTContentGenerator
     start_time = Time.now
 
     raise "ブックマークが空です" if bookmarks.empty?
+
+    # Task 3.3: Progress callback に overall summary ステージを報告
+    @progress_callback.report_event('info', '全体サマリー生成を開始', {
+      bookmark_count: bookmarks.length,
+      keywords: keywords
+    })
 
     # ブックマークの context を構築
     context = format_bookmarks_for_prompt(bookmarks)
@@ -61,12 +69,16 @@ class GPTContentGenerator
 
     if result
       ProgressReporter.success("全体サマリー生成成功 (#{duration_ms}ms)")
+      @progress_callback.report_event('info', '全体サマリー生成完了', {
+        duration_ms: duration_ms
+      })
       {
         summary: result,
         duration_ms: duration_ms
       }
     else
       ProgressReporter.error("全体サマリー生成失敗")
+      @progress_callback.report_event('error', '全体サマリー生成失敗')
       raise "GPT API によるサマリー生成失敗"
     end
   end
@@ -79,6 +91,11 @@ class GPTContentGenerator
 
     raise "ブックマークが空です" if bookmarks.empty?
 
+    # Task 3.3: Progress callback に keyword extraction ステージを報告
+    @progress_callback.report_event('info', 'キーワード抽出を開始', {
+      bookmark_count: bookmarks.length
+    })
+
     # Task 5.2: GPTKeywordExtractor.extract_keywords_from_bookmarks を呼び出し
     result = @keyword_extractor.extract_keywords_from_bookmarks(bookmarks, 'filtered')
 
@@ -87,6 +104,11 @@ class GPTContentGenerator
 
     duration_ms = ((Time.now - start_time) * 1000).to_i
     ProgressReporter.success("関連ワード抽出成功: #{related_clusters.length} クラスタ (#{duration_ms}ms)")
+
+    @progress_callback.report_event('info', 'キーワード抽出完了', {
+      cluster_count: related_clusters.length,
+      duration_ms: duration_ms
+    })
 
     {
       related_clusters: related_clusters,
@@ -102,6 +124,12 @@ class GPTContentGenerator
     start_time = Time.now
 
     raise "ブックマークが空です" if bookmarks.empty?
+
+    # Task 3.3: Progress callback に analysis ステージを報告
+    @progress_callback.report_event('info', '考察生成を開始', {
+      bookmark_count: bookmarks.length,
+      keywords: keywords
+    })
 
     # ブックマークの context を構築
     context = format_bookmarks_for_prompt(bookmarks)
@@ -126,12 +154,16 @@ class GPTContentGenerator
 
     if result
       ProgressReporter.success("考察生成成功 (#{duration_ms}ms)")
+      @progress_callback.report_event('info', '考察生成完了', {
+        duration_ms: duration_ms
+      })
       {
         analysis: result,
         duration_ms: duration_ms
       }
     else
       ProgressReporter.error("考察生成失敗")
+      @progress_callback.report_event('error', '考察生成失敗')
       raise "GPT API による考察生成失敗"
     end
   end
@@ -148,13 +180,22 @@ class GPTContentGenerator
           # リトライ間隔：1 秒、2 秒、4 秒（exponential backoff）
           delay = INITIAL_RETRY_DELAY * (2 ** attempt)
           ProgressReporter.warning("API エラー（試行 #{attempt + 1}/#{MAX_RETRIES}）: #{e.message}。#{delay}s 後に再試行...")
+          # Task 3.3: Progress callback に API リトライイベントを報告
+          @progress_callback.report_event('retry', "API エラーをリトライ (#{attempt + 1}/#{MAX_RETRIES})", {
+            attempt: attempt + 1,
+            max_retries: MAX_RETRIES,
+            delay_seconds: delay,
+            error: e.message
+          })
           sleep(delay)
         else
           ProgressReporter.error("API 最終失敗")
+          @progress_callback.report_event('error', 'API 最終失敗')
           return nil
         end
       rescue StandardError => e
         ProgressReporter.error("エラー", e.message)
+        @progress_callback.report_event('error', "予期しないエラー: #{e.message}")
         return nil
       end
     end

@@ -1,11 +1,13 @@
 require 'mail'
 require_relative 'progress_reporter'
+require_relative 'progress_callback'
 
 class KindleEmailSender
-  def initialize
+  def initialize(progress_callback = nil)
     @gmail_address = ENV['GMAIL_ADDRESS']
     @gmail_app_password = ENV['GMAIL_APP_PASSWORD']
     @kindle_email = ENV['KINDLE_EMAIL']
+    @progress_callback = progress_callback || ProgressCallback.null_callback
 
     validate_credentials!
     configure_mail
@@ -18,12 +20,14 @@ class KindleEmailSender
   def send_pdf(pdf_path, subject: nil)
     unless File.exist?(pdf_path)
       ProgressReporter.error("PDFファイルが見つかりません", pdf_path)
+      @progress_callback.report_event('error', "PDFファイルが見つかりません: #{pdf_path}")
       return false
     end
 
     file_size = File.size(pdf_path) / 1024 / 1024.0 # MB
     if file_size > 25
       ProgressReporter.error("ファイルサイズ超過", "#{file_size.round(2)}MB（最大25MB）")
+      @progress_callback.report_event('error', "ファイルサイズ超過: #{file_size.round(2)}MB")
       return false
     end
 
@@ -34,6 +38,13 @@ class KindleEmailSender
     ProgressReporter.indented("件名: #{subject}")
     ProgressReporter.indented("ファイル: #{File.basename(pdf_path)} (#{file_size.round(2)}MB)")
     ProgressReporter.indented("送信先: #{@kindle_email}")
+
+    # Task 3.5: Progress callback に email_sending ステージを報告
+    @progress_callback.report_stage('email_sending', 95, {
+      recipient: @kindle_email,
+      file_size_mb: file_size,
+      subject: subject
+    })
 
     begin
       mail = Mail.new do
@@ -50,18 +61,37 @@ class KindleEmailSender
       mail.deliver!
 
       ProgressReporter.success("メール送信成功！")
+
+      # Task 3.5: Progress callback にメール送信完了イベントを報告
+      @progress_callback.report_stage('email_sending', 100, {
+        recipient: @kindle_email,
+        status: 'success'
+      })
+
       true
     rescue Timeout::Error => e
       ProgressReporter.error("メール送信失敗（タイムアウト）", "SMTP接続がタイムアウトしました。ネットワークを確認してください。")
+      @progress_callback.report_event('error', 'メール送信失敗（タイムアウト）', {
+        error: e.message
+      })
       false
     rescue Net::SMTPAuthenticationError => e
       ProgressReporter.error("メール送信失敗（認証エラー）", "Gmail認証情報が正しくありません。アプリパスワード設定を確認してください。")
+      @progress_callback.report_event('error', 'メール送信失敗（認証エラー）', {
+        error: e.message
+      })
       false
     rescue Net::SMTPServerBusy => e
       ProgressReporter.error("メール送信失敗（SMTPサーバビジー）", e.message)
+      @progress_callback.report_event('error', 'メール送信失敗（SMTPサーバビジー）', {
+        error: e.message
+      })
       false
     rescue => e
       ProgressReporter.error("メール送信失敗", "#{e.class.name}: #{e.message}")
+      @progress_callback.report_event('error', "メール送信失敗: #{e.class.name}", {
+        error: e.message
+      })
       false
     end
   end
