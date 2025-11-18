@@ -61,8 +61,12 @@ class WeeklySummaryGenerator
       end
     end
     
-    # 5. 全体の総括を生成
-    summary_data[:overall_insights] = generate_overall_insights(summary_data[:keywords])
+    # 5. 全体の総括を生成（キーワードマッチがない場合は全ブックマークから生成）
+    if summary_data[:keywords].empty?
+      summary_data[:overall_insights] = generate_overall_insights_from_bookmarks(bookmarks)
+    else
+      summary_data[:overall_insights] = generate_overall_insights(summary_data[:keywords])
+    end
 
     # 6. 周辺キーワード（related_clusters）を抽出
     begin
@@ -196,19 +200,19 @@ class WeeklySummaryGenerator
   
   def generate_overall_insights(keywords_data)
     return nil if keywords_data.empty?
-    
+
     keywords_summary = keywords_data.map do |keyword, data|
       "#{keyword}: #{data[:article_count]}記事"
     end.join(", ")
-    
+
     prompt = <<~PROMPT
       今週の技術トレンドサマリー:
       #{keywords_summary}
-      
+
       全体的な技術トレンドの洞察を200文字程度で生成してください。
       エンジニアが今週注目すべきポイントを簡潔にまとめてください。
     PROMPT
-    
+
     begin
       response = @openai.chat(
         parameters: {
@@ -218,7 +222,42 @@ class WeeklySummaryGenerator
           max_tokens: 300
         }
       )
-      
+
+      response.dig("choices", 0, "message", "content")
+    rescue => e
+      puts "❌ 総括生成エラー: #{e.message}"
+      nil
+    end
+  end
+
+  def generate_overall_insights_from_bookmarks(bookmarks)
+    return nil if bookmarks.empty?
+
+    # ブックマークのタイトルとタグから簡易サマリーを作成
+    bookmarks_summary = bookmarks.map do |bm|
+      tags = bm['tags'] ? bm['tags'].join(', ') : 'タグなし'
+      "「#{bm['title']}」(#{tags})"
+    end.join("\n")
+
+    prompt = <<~PROMPT
+      今週ブックマークした記事一覧:
+      #{bookmarks_summary}
+
+      これらの記事から、今週の技術トレンドや関心事を200文字程度で総括してください。
+      エンジニアが今週注目すべきポイントを簡潔にまとめてください。
+    PROMPT
+
+    begin
+      puts "📝 全ブックマークから総括を生成中..."
+      response = @openai.chat(
+        parameters: {
+          model: "gpt-4o-mini",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: 300
+        }
+      )
+
       response.dig("choices", 0, "message", "content")
     rescue => e
       puts "❌ 総括生成エラー: #{e.message}"

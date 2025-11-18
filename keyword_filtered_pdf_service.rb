@@ -299,15 +299,20 @@ class KeywordFilteredPDFService
 
     ProgressReporter.progress(nil, "ジョブ作成完了: #{job_uuids.length} 件", :info)
 
-    # Task 4.2: ジョブ完了待機
-    job_poller = GatherlyJobPoller.new(timeout_seconds: 300)
+    # Task 4.2: ジョブ完了待機（夜間バッチなので30分待つ）
+    job_poller = GatherlyJobPoller.new(timeout_seconds: 1800, poll_interval_seconds: 5)
     polling_result = job_poller.poll_until_completed(job_uuids)
     completed_job_uuids = polling_result[:completed]
+    timed_out_job_uuids = polling_result[:timed_out]
 
-    # Note: If Gatherly API is not fully operational, content fetching will be skipped
-    # but the pipeline will continue with existing content
+    # タイムアウトしたジョブがあれば警告
+    if timed_out_job_uuids.any?
+      ProgressReporter.warning("#{timed_out_job_uuids.length} 件のジョブがタイムアウトしました")
+    end
+
+    # 完了したジョブがない場合は警告を出すが、処理は継続
     if completed_job_uuids.empty?
-      ProgressReporter.warning("Gatherly API ジョブが完了しませんでした（開発環境では API が未実装の可能性があります）")
+      ProgressReporter.warning("Gatherly API ジョブが完了しませんでした")
       ProgressReporter.progress(nil, "既存コンテンツで処理を継続します", :info)
       return
     end

@@ -9,14 +9,21 @@
 
 cd /var/git/rainpipe
 
+# 環境変数を読み込む
+export $(grep -v '^#' /var/git/rainpipe/.env | xargs)
+
+# Ruby gemのパスを設定
+export GEM_HOME=/home/terubo/.gem
+export GEM_PATH=/home/terubo/.gem:/var/lib/gems/3.0.0
+
 echo "=========================================="
 echo "Weekly Kindle Report Generator (Improved)"
 echo "Time: $(date '+%Y-%m-%d %H:%M:%S')"
 echo "=========================================="
 echo ""
 
-# 改善版スクリプトで週刊レポート生成＆送信
-ruby weekly_kindle_send_improved.rb
+# 週刊PDFレポート生成＆Kindle送信
+/usr/bin/ruby generate_weekly_pdf.rb
 
 EXIT_CODE=$?
 

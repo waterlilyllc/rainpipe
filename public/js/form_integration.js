@@ -15,9 +15,19 @@ class FormIntegration {
 
     this.pollingManager = null;
     this.currentJobId = null;
+    this.progressPanelInstance = null;  // Track ProgressPanel instance
+    this.logPanelInstance = null;  // Track LogPanel instance
 
     this._attachFormHandler();
-    this._checkResumeParameter();
+
+    // Check for saved job ID in localStorage (page reload recovery)
+    const savedJobId = localStorage.getItem('currentJobId');
+    if (savedJobId) {
+      console.log(`Resuming job from localStorage: ${savedJobId}`);
+      this._resumeMonitoring(savedJobId);
+    } else {
+      this._checkResumeParameter();
+    }
   }
 
   // Task 7.1: Intercept form submit event with AJAX
@@ -48,7 +58,7 @@ class FormIntegration {
       return;
     }
 
-    // Task 7.1: Send AJAX POST to /filtered_pdf/generate
+    // Task 7.1: Send AJAX POST to /api/filtered_pdf/generate
     const formData = new FormData();
     formData.append('keywords', keywords);
     formData.append('date_start', date_start);
@@ -56,7 +66,7 @@ class FormIntegration {
     formData.append('send_to_kindle', send_to_kindle);
     formData.append('kindle_email', kindle_email);
 
-    fetch('/filtered_pdf/generate', {
+    fetch('/api/filtered_pdf/generate', {
       method: 'POST',
       body: formData
     })
@@ -80,6 +90,10 @@ class FormIntegration {
 
         // Task 7.1: Success - hide form, show progress
         this.currentJobId = data.job_id;
+
+        // Save job ID to localStorage for page reload recovery
+        localStorage.setItem('currentJobId', data.job_id);
+
         this._hideForm();
         this._showProgress();
 
@@ -106,6 +120,10 @@ class FormIntegration {
   _showProgress() {
     if (this.progressPanel) {
       this.progressPanel.style.display = 'block';
+      // Create ProgressPanel instance and show it
+      if (!this.progressPanelInstance) {
+        this.progressPanelInstance = new ProgressPanel(this.progressPanel);
+      }
     }
   }
 
@@ -138,19 +156,21 @@ class FormIntegration {
 
   // Task 7.1: Handle progress update
   _onProgressUpdate(progress) {
-    // Update ProgressPanel
-    const progressPanel = new ProgressPanel(
-      document.querySelector(this.progressPanelSelector)
-    );
-    progressPanel.update(progress);
+    // Update ProgressPanel instance
+    if (this.progressPanelInstance) {
+      this.progressPanelInstance.update(progress);
+    }
 
     // Task 6.1: Update LogPanel with latest logs
     const logPanelElement = document.querySelector('#log-panel');
     if (logPanelElement && progress.logs) {
-      if (!this.logPanel) {
-        this.logPanel = new LogPanel(logPanelElement);
+      // Show log panel
+      logPanelElement.style.display = 'block';
+
+      if (!this.logPanelInstance) {
+        this.logPanelInstance = new LogPanel(logPanelElement);
       }
-      this.logPanel.update(progress.logs);
+      this.logPanelInstance.update(progress.logs);
     }
   }
 
@@ -161,12 +181,26 @@ class FormIntegration {
       this.progressPanel.style.display = 'none';
     }
 
+    // Hide log panel
+    const logPanelElement = document.querySelector('#log-panel');
+    if (logPanelElement) {
+      logPanelElement.style.display = 'none';
+    }
+
+    // Clear saved job ID from localStorage
+    localStorage.removeItem('currentJobId');
+
     if (this.completionPanel) {
       const completionPanel = new CompletionPanel(this.completionPanel);
       completionPanel.update(progress, jobInfo, {
         onRefreshHistory: () => this._refreshHistory(),
         onGenerateAnother: () => this._generateAnother()
       });
+    }
+
+    // 履歴パネルを更新
+    if (window.jobHistoryPanel) {
+      window.jobHistoryPanel.loadHistory();
     }
   }
 
@@ -212,6 +246,8 @@ class FormIntegration {
 
   // Task 7.3: Resume monitoring for page reload
   _resumeMonitoring(jobId) {
+    console.log(`Resuming monitoring for job: ${jobId}`);
+
     // Task 7.3: Query /api/progress to restore last known state
     fetch(`/api/progress?job_id=${encodeURIComponent(jobId)}`)
       .then(response => {
@@ -221,28 +257,80 @@ class FormIntegration {
         return response.json();
       })
       .then(progress => {
+        console.log(`Progress status: ${progress.status}`);
+
         // Task 7.3: Skip form display, show progress
         this.currentJobId = jobId;
         this._hideForm();
-        this._showProgress();
+        this._showProgress();  // This creates progressPanelInstance
 
         // Task 7.3: Restore progress display
-        const progressPanel = new ProgressPanel(
-          document.querySelector(this.progressPanelSelector)
-        );
-        progressPanel.update(progress);
+        if (this.progressPanelInstance) {
+          this.progressPanelInstance.update(progress);
+        }
+
+        // Task 7.3: Show LogPanel if logs exist
+        const logPanelElement = document.querySelector('#log-panel');
+        if (logPanelElement && progress.logs) {
+          logPanelElement.style.display = 'block';
+          if (!this.logPanelInstance) {
+            this.logPanelInstance = new LogPanel(logPanelElement);
+          }
+          this.logPanelInstance.update(progress.logs);
+        }
 
         // Task 7.3: Start polling if still processing
-        if (progress.status === 'processing') {
+        if (progress.status === 'processing' || progress.status === 'pending') {
+          console.log('Job still processing, starting polling...');
           this._startPolling(jobId, {});
         } else if (progress.status === 'completed') {
-          this._onJobComplete(progress, {});
+          console.log('Job already completed');
+          // ジョブが完了している場合は、localStorageをクリアしてフォームを表示
+          localStorage.removeItem('currentJobId');
+          this._hideProgress();
+          this._hideLog();
+          if (this.form) {
+            this.form.style.display = 'block';
+          }
+          // 履歴を更新
+          if (window.jobHistoryPanel) {
+            window.jobHistoryPanel.loadHistory();
+          }
+        } else if (progress.status === 'failed') {
+          console.log('Job failed');
+          // ジョブが失敗している場合は、localStorageをクリアしてエラーを表示
+          localStorage.removeItem('currentJobId');
+          this._hideProgress();
+          this._hideLog();
+          if (this.form) {
+            this.form.style.display = 'block';
+          }
+          this._showError(`ジョブが失敗しました: ${progress.error_info?.message || '不明なエラー'}`);
         }
       })
       .catch(error => {
         console.error('Resume monitoring error:', error);
-        // If error, just show the form normally
+        // エラーの場合は、localStorageをクリアしてフォームを表示
+        localStorage.removeItem('currentJobId');
+        if (this.form) {
+          this.form.style.display = 'block';
+        }
       });
+  }
+
+  // ProgressPanelを非表示にする
+  _hideProgress() {
+    if (this.progressPanel) {
+      this.progressPanel.style.display = 'none';
+    }
+  }
+
+  // LogPanelを非表示にする
+  _hideLog() {
+    const logPanelElement = document.querySelector('#log-panel');
+    if (logPanelElement) {
+      logPanelElement.style.display = 'none';
+    }
   }
 }
 

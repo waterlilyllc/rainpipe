@@ -3,8 +3,11 @@
 
 require 'sqlite3'
 require 'securerandom'
+require 'date'
 require_relative 'keyword_filtered_pdf_service'
 require_relative 'progress_callback'
+require_relative 'gpt_content_generator'
+require_relative 'keyword_pdf_generator'
 
 # Task 4.1-4.4: JobQueue class for background job management
 # Manages PDF generation job queueing and background thread execution
@@ -29,10 +32,10 @@ class JobQueue
 
     # Create database record for job
     db = SQLite3::Database.new(@db_path)
-    db.execute(<<-SQL, [job_id, keywords, date_start, date_end, send_to_kindle ? 1 : 0, kindle_email])
+    db.execute(<<-SQL, [job_id, keywords, date_start, date_end, 0, kindle_email])
       INSERT INTO keyword_pdf_generations
-        (uuid, keywords, date_start, date_end, send_to_kindle, kindle_email, status, current_percentage, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, 'pending', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        (uuid, keywords, date_range_start, date_range_end, bookmark_count, status, kindle_email, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, 'pending', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     SQL
     db.close
 
@@ -63,9 +66,9 @@ class JobQueue
   # @param timings [Hash] Execution timing information
   def mark_completed(job_id, pdf_path, timings = {})
     db = SQLite3::Database.new(@db_path)
-    db.execute(<<-SQL, [pdf_path, 100, 'completed', job_id])
+    db.execute(<<-SQL, [pdf_path, 'completed', job_id])
       UPDATE keyword_pdf_generations
-      SET pdf_path = ?, current_percentage = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+      SET pdf_path = ?, status = ?, updated_at = CURRENT_TIMESTAMP
       WHERE uuid = ?
     SQL
     db.close
@@ -118,37 +121,94 @@ class JobQueue
       db = SQLite3::Database.new(@db_path)
       callback = ProgressCallback.new(job_id, db)
 
-      # Create PDF generation service with callback
+      # Step 1: Create PDF generation service with callback
       service = KeywordFilteredPDFService.new(
-        progress_callback: callback
-      )
-
-      # Execute PDF generation
-      result = service.generate(
         keywords: keywords,
         date_start: date_start,
         date_end: date_end,
-        send_to_kindle: send_to_kindle,
-        kindle_email: kindle_email,
-        job_id: job_id
+        progress_callback: callback
       )
 
-      # Mark job as completed
-      mark_completed(job_id, result[:pdf_path])
+      # Step 2: Filter bookmarks and generate summaries
+      result = service.execute
+
+      # Handle filtering/summarization errors
+      if result[:status] == 'error'
+        error_message = result[:error] || 'Unknown error during filtering'
+        mark_failed(job_id, error_message)
+        db.close
+        return
+      end
+
+      # Handle no matching bookmarks
+      bookmarks = result[:bookmarks]
+      if bookmarks.empty?
+        error_message = 'No bookmarks matched the filter'
+        mark_failed(job_id, error_message)
+        db.close
+        return
+      end
+
+      # Step 3: Generate GPT content
+      gpt_generator = GPTContentGenerator.new(ENV['OPENAI_API_KEY'], false)
+      summary_result = gpt_generator.generate_overall_summary(bookmarks, keywords)
+      keywords_result = gpt_generator.extract_related_keywords(bookmarks)
+      analysis_result = gpt_generator.generate_analysis(bookmarks, keywords)
+
+      # Step 4: Generate PDF file
+      pdf_content = {
+        overall_summary: summary_result[:summary],
+        summary: summary_result[:summary],
+        related_clusters: keywords_result[:related_clusters],
+        analysis: analysis_result[:analysis],
+        bookmarks: bookmarks,
+        keywords: keywords,
+        date_range: result[:date_range]
+      }
+
+      pdf_generator = KeywordPDFGenerator.new
+      output_path = File.join('data', "filtered_pdf_#{Time.now.utc.strftime('%Y%m%d_%H%M%S')}_#{keywords.gsub(/[^a-zA-Z0-9]/, '_')}.pdf")
+      pdf_result = pdf_generator.generate(pdf_content, output_path)
+
+      # Step 5: Mark job as completed
+      callback.report_stage('pdf_generation', 100, { pdf_path: pdf_result[:pdf_path] })
+      mark_completed(job_id, pdf_result[:pdf_path])
       db.close
+
+      # Step 6: Send to Kindle if requested
+      if send_to_kindle && kindle_email
+        begin
+          email_sender = KindleEmailSender.new
+          email_sender.send_pdf(pdf_result[:pdf_path], subject: "キーワード PDF: #{keywords}")
+        rescue => e
+          # Log warning but don't fail the job
+          db = SQLite3::Database.new(@db_path)
+          db.execute(<<-SQL, [job_id, 'warning', "Failed to send to Kindle: #{e.message}"])
+            INSERT INTO keyword_pdf_progress_logs
+              (job_id, stage, event_type, percentage, message, timestamp)
+            VALUES (?, 'email_sending', ?, 100, ?, CURRENT_TIMESTAMP)
+          SQL
+          db.close
+        end
+      end
+
     rescue => e
       # Task 4.1: Handle uncaught exceptions
       error_message = "#{e.class}: #{e.message}"
       mark_failed(job_id, error_message)
 
       # Log error to progress logs
-      db = SQLite3::Database.new(@db_path)
-      db.execute(<<-SQL, [job_id, 'error', error_message])
-        INSERT INTO keyword_pdf_progress_logs
-          (job_id, stage, event_type, percentage, message, timestamp)
-        VALUES (?, 'error', ?, 0, ?, CURRENT_TIMESTAMP)
-      SQL
-      db.close
+      begin
+        db = SQLite3::Database.new(@db_path)
+        db.execute(<<-SQL, [job_id, 'error', error_message])
+          INSERT INTO keyword_pdf_progress_logs
+            (job_id, stage, event_type, percentage, message, timestamp)
+          VALUES (?, 'error', ?, 0, ?, CURRENT_TIMESTAMP)
+        SQL
+        db.close
+      rescue => _
+        # Ignore if we can't log the error
+      end
 
       # Re-raise for monitoring (optional - can be logged elsewhere)
       # puts "Background job #{job_id} failed: #{error_message}"

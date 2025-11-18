@@ -600,6 +600,61 @@ post '/filtered_pdf/generate' do
 end
 
 # ============================================================
+# Task 7.1: POST /api/filtered_pdf/generate - AJAX endpoint for Job Queue
+# ============================================================
+post '/api/filtered_pdf/generate' do
+  content_type :json
+
+  # Validate form inputs
+  keywords = params[:keywords] || ''
+  date_start = params[:date_start] || ''
+  date_end = params[:date_end] || ''
+  send_to_kindle = params[:send_to_kindle] == 'on' || params[:send_to_kindle] == 'true'
+  kindle_email = params[:kindle_email] || ''
+
+  # Task 7.1: Validate input
+  validator = FormValidator.new
+  unless validator.validate(keywords: keywords, date_start: date_start, date_end: date_end)
+    status 400
+    return { error: validator.errors.join("; ") }.to_json
+  end
+
+  # Task 7.1: If send_to_kindle is true, validate kindle_email
+  if send_to_kindle
+    if kindle_email.strip.empty?
+      status 400
+      return { error: "Kindle email is required when sending to Kindle" }.to_json
+    end
+    unless kindle_email.match?(/\A[\w+\-.]+@[\w\-.]+\.[\w\-.]+\Z/)
+      status 400
+      return { error: "Invalid Kindle email format" }.to_json
+    end
+  end
+
+  begin
+    # Task 7.1: Use JobQueue to enqueue job for background execution
+    job_queue = JobQueue.new(db_path: 'rainpipe.db')
+    job_id = job_queue.enqueue(
+      keywords: keywords,
+      date_start: date_start,
+      date_end: date_end,
+      send_to_kindle: send_to_kindle,
+      kindle_email: kindle_email
+    )
+
+    # Task 7.1: Return job_id immediately (non-blocking)
+    status 200
+    { job_id: job_id }.to_json
+  rescue StandardError => e
+    status 500
+    # Log the full error for debugging
+    puts "ERROR in /api/filtered_pdf/generate: #{e.class} - #{e.message}"
+    puts e.backtrace.join("\n")
+    { error: "Failed to enqueue job: #{e.message}" }.to_json
+  end
+end
+
+# ============================================================
 # Task 1.1: GET /api/progress - Progress tracking API endpoint
 # ============================================================
 get '/api/progress' do
@@ -635,12 +690,17 @@ get '/api/progress' do
       [job_id]
     )
 
+    # Task 1.1: Extract current_stage and current_percentage from latest log entry
+    latest_log = logs.first  # logs are ordered by timestamp DESC
+    current_stage = latest_log ? latest_log['stage'] : nil
+    current_percentage = latest_log ? latest_log['percentage'] : 0
+
     # Task 1.1: Return ProgressResponse JSON schema
     response = {
       status: job['status'],
       job_id: job['uuid'],
-      current_stage: job['current_stage'],
-      current_percentage: job['current_percentage'],
+      current_stage: current_stage,
+      current_percentage: current_percentage,
       stage_details: {
         keywords: job['keywords'],
         bookmark_count: job['bookmark_count'],
@@ -664,9 +724,6 @@ get '/api/progress' do
 
     db.close
     response.to_json
-  rescue SQLite3::DatabaseException => e
-    status 500
-    { error_type: 'database_error', message: e.message }.to_json
   rescue StandardError => e
     status 500
     { error_type: 'server_error', message: e.message }.to_json
@@ -717,9 +774,6 @@ post '/api/cancel' do
 
     db.close
     { success: true, message: "Job #{job_id} cancelled successfully" }.to_json
-  rescue SQLite3::DatabaseException => e
-    status 500
-    { error_type: 'database_error', message: e.message }.to_json
   rescue StandardError => e
     status 500
     { error_type: 'server_error', message: e.message }.to_json
@@ -780,12 +834,76 @@ get '/api/logs/history' do
 
     db.close
     response.to_json
-  rescue SQLite3::DatabaseException => e
-    status 500
-    { error_type: 'database_error', message: e.message }.to_json
   rescue StandardError => e
     status 500
     { error_type: 'server_error', message: e.message }.to_json
   end
 end
 
+# ============================================================
+# GET /api/jobs/history - 全ジョブ履歴を取得
+# ============================================================
+get '/api/jobs/history' do
+  content_type :json
+
+  begin
+    # データベース接続
+    db = SQLite3::Database.new('rainpipe.db')
+    db.results_as_hash = true
+
+    # 全ジョブを取得（最新20件、作成日時降順）
+    limit = params[:limit]&.to_i || 20
+    jobs = db.execute(
+      'SELECT uuid, keywords, status, created_at, updated_at, pdf_path, error_message, bookmark_count FROM keyword_pdf_generations ORDER BY created_at DESC LIMIT ?',
+      [limit]
+    )
+
+    # レスポンスを整形
+    response = {
+      jobs: jobs.map { |job|
+        {
+          job_id: job['uuid'],
+          keywords: job['keywords'],
+          status: job['status'],
+          created_at: job['created_at'],
+          updated_at: job['updated_at'],
+          pdf_path: job['pdf_path'],
+          error_message: job['error_message'],
+          bookmark_count: job['bookmark_count']
+        }
+      }
+    }
+
+    db.close
+    response.to_json
+  rescue StandardError => e
+    status 500
+    { error_type: 'server_error', message: e.message }.to_json
+  end
+end
+
+
+# ============================================================
+# GET /data/* - PDFファイルのダウンロード
+# ============================================================
+get '/data/:filename' do
+  filename = params[:filename]
+
+  # セキュリティ: ファイル名にパストラバーサルがないか確認
+  if filename.include?('..') || filename.include?('/')
+    status 400
+    return 'Invalid filename'
+  end
+
+  # PDFファイルのパスを構築
+  file_path = File.join(__dir__, 'data', filename)
+
+  # ファイルが存在するか確認
+  unless File.exist?(file_path)
+    status 404
+    return 'File not found'
+  end
+
+  # PDFファイルとして送信
+  send_file file_path, type: 'application/pdf', disposition: 'attachment'
+end

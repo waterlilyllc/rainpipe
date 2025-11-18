@@ -139,10 +139,9 @@ class ProgressCallback
   def update_job_record(stage, percentage)
     return if @is_null
 
-    @db.execute(
-      'UPDATE keyword_pdf_generations SET current_stage = ?, current_percentage = ?, updated_at = ? WHERE uuid = ?',
-      [stage, percentage, Time.now.utc.iso8601, @job_id]
-    )
+    # NOTE: keyword_pdf_generations スキーマには current_stage と current_percentage カラムが存在しないため、
+    # 進捗情報は keyword_pdf_progress_logs テーブルに保存される。
+    # ジョブレコード自体の更新は不要（updated_at は mark_completed/mark_failed で更新される）
   end
 
   # ステージ名を人間が読める形式のメッセージに変換

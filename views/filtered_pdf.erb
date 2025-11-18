@@ -208,6 +208,17 @@
         </ul>
       </div>
     </div>
+
+    <!-- PDF生成履歴 -->
+    <div id="job-history-panel" style="margin-top: 2rem;">
+      <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 1000px; margin: 0 auto;">
+        <h2 style="margin-bottom: 1.5rem;">📚 PDF生成履歴</h2>
+        <div id="job-history-list">
+          <p style="color: #6c757d; text-align: center;">読み込み中...</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Task 6.2: History Selector -->
     <div id="history-selector-container" style="display: none; margin-top: 2rem;"></div>
 
@@ -246,6 +257,8 @@
   <script src="/js/read_only_enforcer.js"></script>
   <!-- Task 7.1-7.3: FormIntegration Script -->
   <script src="/js/form_integration.js"></script>
+  <!-- JobHistoryPanel Script -->
+  <script src="/js/job_history_panel.js"></script>
 
   <script>
     // Initialize all components (Task 7.1-7.3: FormIntegration)
@@ -276,8 +289,12 @@
         historySelectorContainer: '#history-selector-container'
       });
 
-      // Optional: Initialize history selector if viewing past jobs
-      // This would be done by FormIntegration when needed
+      // Initialize JobHistoryPanel
+      const jobHistoryPanel = document.querySelector('#job-history-panel');
+      if (jobHistoryPanel) {
+        window.jobHistoryPanel = new JobHistoryPanel(jobHistoryPanel);
+        window.jobHistoryPanel.loadHistory();
+      }
     });
   </script>
 </body>

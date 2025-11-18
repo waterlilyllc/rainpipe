@@ -5,6 +5,7 @@ require 'json'
 require_relative 'raindrop_client'
 require_relative 'bookmark_content_manager'
 require_relative 'weekly_summary_generator'
+require_relative 'bookmark_content_fetcher'
 
 class WeeklyPDFGenerator
   FONT_PATH = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
@@ -13,6 +14,7 @@ class WeeklyPDFGenerator
   def initialize
     @client = RaindropClient.new
     @content_manager = BookmarkContentManager.new
+    @content_fetcher = BookmarkContentFetcher.new
     @summary_generator = WeeklySummaryGenerator.new if ENV['OPENAI_API_KEY']
   end
 
@@ -56,7 +58,7 @@ class WeeklyPDFGenerator
   private
 
   def load_or_generate_summary(week_start)
-    summary_file = File.join(SUMMARY_DIR, "#{week_start.strftime('%Y%m%d')}.json")
+    summary_file = File.join(SUMMARY_DIR, "summary_#{week_start.strftime('%Y-%m-%d')}.json")
 
     if File.exist?(summary_file)
       puts "📊 既存のサマリーを読み込み: #{summary_file}"
@@ -106,11 +108,81 @@ class WeeklyPDFGenerator
   def enrich_bookmarks_with_content(bookmarks)
     return [] if bookmarks.nil? || bookmarks.empty?
 
+    # 本文がないブックマークを検出してクロールジョブを作成
+    missing_content_bookmarks = []
+    bookmarks.each do |bookmark|
+      content = @content_manager.get_content(bookmark['_id'])
+      if content.nil?
+        missing_content_bookmarks << bookmark
+      end
+    end
+
+    # 本文がないブックマークがあれば、クロールジョブを作成
+    if missing_content_bookmarks.any?
+      puts "⚠️  本文未取得のブックマークが#{missing_content_bookmarks.length}件あります"
+      puts "📥 本文取得ジョブを作成中..."
+
+      missing_content_bookmarks.each do |bookmark|
+        puts "  クロール開始: #{bookmark['title']}"
+        job_uuid = @content_fetcher.fetch_content(bookmark['_id'], bookmark['link'])
+
+        if job_uuid
+          puts "    ✅ ジョブ作成完了 (#{job_uuid})"
+        else
+          puts "    ⚠️  ジョブ作成スキップまたは失敗"
+        end
+      end
+
+      puts ""
+      puts "⏳ 本文取得を待機中（最大30分）..."
+      puts ""
+
+      # 本文取得完了を待つ（最大30分）
+      wait_for_content_fetch(missing_content_bookmarks.map { |bm| bm['_id'] }, timeout: 1800)
+    end
+
+    # 本文データを付加
     bookmarks.map do |bookmark|
       content = @content_manager.get_content(bookmark['_id'])
       bookmark['content_data'] = content if content
       bookmark
     end
+  end
+
+  def wait_for_content_fetch(raindrop_ids, timeout: 1800)
+    start_time = Time.now
+    remaining_ids = raindrop_ids.dup
+    check_interval = 10 # 10秒ごとにチェック
+
+    while remaining_ids.any? && (Time.now - start_time) < timeout
+      sleep check_interval
+
+      remaining_ids.reject! do |id|
+        content = @content_manager.get_content(id)
+        if content
+          puts "  ✅ 本文取得完了: ID #{id}"
+          true
+        else
+          false
+        end
+      end
+
+      elapsed = (Time.now - start_time).to_i
+      if remaining_ids.any? && elapsed % 60 == 0
+        puts "  待機中... (経過: #{elapsed / 60}分, 残り: #{remaining_ids.length}件)"
+      end
+    end
+
+    if remaining_ids.any?
+      puts ""
+      puts "⚠️  #{remaining_ids.length}件の本文取得がタイムアウトしました"
+      puts "    これらのブックマークは要約なしでPDFに含まれます"
+    else
+      puts ""
+      puts "✅ 全ての本文取得が完了しました"
+    end
+
+    puts ""
   end
 
   def generate_pdf(bookmarks, week_start, week_end, output_path, summary_data = nil)
@@ -119,12 +191,23 @@ class WeeklyPDFGenerator
       setup_japanese_font(pdf)
 
       # ヘッダー
-      add_header(pdf, week_start, week_end, bookmarks.length)
+      add_header(pdf, week_start, week_end, bookmarks)
 
       # サマリーセクション（ある場合）
-      if summary_data && summary_data['keywords']
+      has_keywords = summary_data && summary_data['keywords'] && !summary_data['keywords'].empty?
+      has_clusters = summary_data && summary_data['related_clusters'] && summary_data['related_clusters'].any?
+
+      puts "  [PDF] summary_data: #{summary_data.class}"
+      puts "  [PDF] keywords: #{summary_data&.dig('keywords').class} = #{summary_data&.dig('keywords').inspect}"
+      puts "  [PDF] related_clusters: #{summary_data&.dig('related_clusters').class} = #{summary_data&.dig('related_clusters')&.length}"
+      puts "  [PDF] has_keywords=#{has_keywords}, has_clusters=#{has_clusters}"
+
+      if has_keywords || has_clusters
+        puts "  [PDF] サマリーセクションを追加します"
         add_weekly_summary(pdf, summary_data)
         pdf.start_new_page
+      else
+        puts "  [PDF] サマリーセクションをスキップ"
       end
 
       # 目次
@@ -141,15 +224,19 @@ class WeeklyPDFGenerator
     end
   end
 
-  def add_header(pdf, week_start, week_end, bookmark_count)
-    pdf.text "週間ブックマークサマリー", size: 24, style: :bold, align: :center
+  def add_header(pdf, week_start, week_end, bookmarks)
+    bookmark_count = bookmarks.length
+    with_summary = bookmarks.count { |b| b['content_data'] && b['content_data']['content'] }
+
+    pdf.text "WEEKLY BOOKMARKS DIGEST", size: 24, style: :bold, align: :center
     pdf.move_down 10
 
-    period_text = "#{week_start.strftime('%Y年%m月%d日')} - #{week_end.strftime('%m月%d日')}"
+    period_text = "Period: #{week_start.strftime('%Y-%m-%d')} - #{week_end.strftime('%Y-%m-%d')}"
     pdf.text period_text, size: 14, align: :center, color: '555555'
 
     pdf.move_down 5
-    pdf.text "全#{bookmark_count}件", size: 12, align: :center, color: '888888'
+    pdf.text "Total Items: #{bookmark_count}", size: 12, align: :center, color: '888888'
+    pdf.text "With Summary: #{with_summary}/#{bookmark_count}", size: 12, align: :center, color: '888888'
 
     pdf.move_down 20
     pdf.stroke_horizontal_rule
@@ -159,16 +246,16 @@ class WeeklyPDFGenerator
   def add_table_of_contents(pdf, bookmarks)
     return if bookmarks.empty?
 
-    pdf.text "目次", size: 16, style: :bold
+    pdf.text "TABLE OF CONTENTS", size: 16, style: :bold
     pdf.move_down 10
 
     bookmarks.each_with_index do |bookmark, index|
-      title = bookmark['title'] || 'タイトルなし'
+      title = bookmark['title'] || 'No Title'
       date = Date.parse(bookmark['created']).strftime('%m/%d')
 
       pdf.text "#{index + 1}. #{title}", size: 10
       pdf.indent(20) do
-        pdf.text "登録日: #{date}", size: 8, color: '888888'
+        pdf.text "Date: #{date}", size: 8, color: '888888'
       end
       pdf.move_down 5
     end
@@ -179,9 +266,9 @@ class WeeklyPDFGenerator
   end
 
   def add_bookmark_detail(pdf, bookmark, number, total)
-    title = bookmark['title'] || 'タイトルなし'
+    title = bookmark['title'] || 'No Title'
     url = bookmark['link'] || ''
-    created = Date.parse(bookmark['created']).strftime('%Y年%m月%d日')
+    created = Date.parse(bookmark['created']).strftime('%Y-%m-%d')
 
     # タイトルバー
     pdf.fill_color 'E8F4F8'
@@ -189,15 +276,15 @@ class WeeklyPDFGenerator
     pdf.fill_color '000000'
 
     pdf.move_down 8
-    pdf.text "#{number}/#{total}. #{title}", size: 14, style: :bold
+    pdf.text "[#{number}] #{title}", size: 14, style: :bold
     pdf.move_down 15
 
     # メタ情報
-    pdf.text "登録日: #{created}", size: 9, color: '666666'
+    pdf.text "Date: #{created}", size: 9, color: '666666'
     pdf.move_down 5
 
     # URL（リンク付き）
-    pdf.text "URL:", size: 9, color: '666666'
+    pdf.text "Link:", size: 9, color: '666666'
     pdf.indent(10) do
       if url.length > 80
         # 長いURLは折り返し
@@ -211,7 +298,7 @@ class WeeklyPDFGenerator
     # タグ
     if bookmark['tags'] && bookmark['tags'].any?
       tags_text = bookmark['tags'].map { |tag| "##{tag}" }.join(' ')
-      pdf.text "タグ: #{tags_text}", size: 9, color: '888888'
+      pdf.text "Tags: #{tags_text}", size: 9, color: '888888'
       pdf.move_down 10
     end
 
@@ -219,31 +306,26 @@ class WeeklyPDFGenerator
     if bookmark['content_data'] && bookmark['content_data']['content']
       content = bookmark['content_data']['content']
 
-      pdf.text "📝 要約", size: 12, style: :bold
+      puts "  [PDF生成] 要約を追加中: #{content[0..50]}..." # デバッグ
+
+      pdf.text "Summary:", size: 12, style: :bold
       pdf.move_down 8
 
-      # 箱で囲む
-      content_height = estimate_content_height(pdf, content)
+      # 箇条書きを整形して表示
+      lines = content.split("\n").reject(&:empty?)
+      puts "  [PDF生成] 行数: #{lines.length}" # デバッグ
 
-      pdf.stroke_color 'CCCCCC'
-      pdf.stroke_bounds do
-        pdf.pad(10) do
-          # 箇条書きを整形して表示
-          lines = content.split("\n").reject(&:empty?)
-          lines.each do |line|
-            if line.start_with?('- ')
-              pdf.text line, size: 10, leading: 4
-              pdf.move_down 4
-            else
-              pdf.text "• #{line}", size: 10, leading: 4
-              pdf.move_down 4
-            end
-          end
+      lines.each_with_index do |line, i|
+        if line.start_with?('- ')
+          pdf.text "  #{line}", size: 10, leading: 4
+        else
+          pdf.text "  • #{line}", size: 10, leading: 4
         end
+        pdf.move_down 4
       end
-      pdf.stroke_color '000000'
     else
-      pdf.text "要約なし", size: 10, color: 'AAAAAA', style: :italic
+      puts "  [PDF生成] 要約なし" # デバッグ
+      pdf.text "[Summary not available]", size: 10, color: 'AAAAAA', style: :italic
     end
 
     pdf.move_down 20
@@ -256,7 +338,7 @@ class WeeklyPDFGenerator
 
   def add_page_numbers(pdf)
     pdf.number_pages(
-      "ページ <page> / <total>",
+      "Page <page> / <total>",
       at: [pdf.bounds.right - 150, 0],
       align: :right,
       size: 9,
@@ -265,19 +347,17 @@ class WeeklyPDFGenerator
   end
 
   def add_weekly_summary(pdf, summary_data)
-    pdf.text "📊 今週の注目キーワード", size: 18, style: :bold
-    pdf.move_down 15
-
     # 全体の総括
     if summary_data['overall_insights']
+      pdf.text "WEEKLY INSIGHTS", size: 18, style: :bold
+      pdf.move_down 15
+
       pdf.fill_color 'FFF8DC'
       pdf.fill_rectangle [0, pdf.cursor], pdf.bounds.width, 60
       pdf.fill_color '000000'
 
       pdf.move_down 10
       pdf.indent(15) do
-        pdf.text "💡 今週の総括", size: 12, style: :bold
-        pdf.move_down 5
         pdf.text summary_data['overall_insights'], size: 10, leading: 4
       end
       pdf.move_down 15
@@ -318,6 +398,24 @@ class WeeklyPDFGenerator
       end
 
       pdf.move_down 10
+    end
+
+    # 周辺キーワード（related_clusters）
+    if summary_data['related_clusters'] && summary_data['related_clusters'].any?
+      pdf.move_down 15
+      pdf.text "PERIPHERAL KEYWORDS / RELATED TOPICS", size: 14, style: :bold
+      pdf.move_down 10
+
+      summary_data['related_clusters'].each do |cluster|
+        pdf.text "• #{cluster['main_topic']}", size: 12, style: :bold, color: '0066CC'
+        pdf.move_down 5
+
+        related_words = cluster['related_words'].join(', ')
+        pdf.indent(15) do
+          pdf.text "Related: #{related_words}", size: 10, color: '666666'
+        end
+        pdf.move_down 8
+      end
     end
   end
 end

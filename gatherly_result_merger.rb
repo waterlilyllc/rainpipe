@@ -57,6 +57,26 @@ class GatherlyResultMerger
         bookmark = merged_bookmarks.find { |b| b['url'] == external_id || b['link'] == external_id }
 
         if bookmark
+          # Check for HTTP errors (404, etc.)
+          status_code = item[:status_code] || item['status_code']
+          error_message = item[:error] || item['error']
+
+          # 404エラーは無視（ユーザー要求による）
+          if status_code == 404 || (error_message && error_message.to_s.include?('404'))
+            puts "  ⚠️  URL #{external_id} は 404 Not Found - スキップ"
+            bookmark['summary'] = 'URL not found (404)'
+            failure_count += 1
+            next
+          end
+
+          # その他のエラーも記録
+          if error_message && !error_message.to_s.empty?
+            puts "  ⚠️  URL #{external_id} でエラー: #{error_message}"
+            bookmark['summary'] = "Error: #{error_message}"
+            failure_count += 1
+            next
+          end
+
           # Note: content は item[:body][:content] に nested されている
           body = item[:body] || item['body'] || {}
           content = body[:content] || body['content']
@@ -65,10 +85,12 @@ class GatherlyResultMerger
             # Task 4.3: 取得した content を対応するブックマークの summary フィールドに統合
             bookmark['summary'] = content
             success_count += 1
+            puts "  ✓ URL #{external_id}: コンテンツ取得成功 (#{content.length} 文字)"
           else
             # Task 4.3: マージ失敗（null content など）の場合は "summary unavailable" マーカーを設定
             bookmark['summary'] = 'summary unavailable'
             failure_count += 1
+            puts "  ✗ URL #{external_id}: コンテンツが空"
           end
         end
       end
