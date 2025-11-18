@@ -228,15 +228,15 @@ class WeeklyPDFGenerator
     bookmark_count = bookmarks.length
     with_summary = bookmarks.count { |b| b['content_data'] && b['content_data']['content'] }
 
-    pdf.text "WEEKLY BOOKMARKS DIGEST", size: 24, style: :bold, align: :center
-    pdf.move_down 10
+    pdf.text "WEEKLY BOOKMARKS DIGEST", size: 30, style: :bold, align: :center
+    pdf.move_down 12
 
     period_text = "Period: #{week_start.strftime('%Y-%m-%d')} - #{week_end.strftime('%Y-%m-%d')}"
-    pdf.text period_text, size: 14, align: :center, color: '555555'
+    pdf.text period_text, size: 18, align: :center, color: '555555'
 
-    pdf.move_down 5
-    pdf.text "Total Items: #{bookmark_count}", size: 12, align: :center, color: '888888'
-    pdf.text "With Summary: #{with_summary}/#{bookmark_count}", size: 12, align: :center, color: '888888'
+    pdf.move_down 8
+    pdf.text "Total Items: #{bookmark_count}", size: 15, align: :center, color: '888888'
+    pdf.text "With Summary: #{with_summary}/#{bookmark_count}", size: 15, align: :center, color: '888888'
 
     pdf.move_down 20
     pdf.stroke_horizontal_rule
@@ -246,18 +246,18 @@ class WeeklyPDFGenerator
   def add_table_of_contents(pdf, bookmarks)
     return if bookmarks.empty?
 
-    pdf.text "TABLE OF CONTENTS", size: 16, style: :bold
-    pdf.move_down 10
+    pdf.text "TABLE OF CONTENTS", size: 22, style: :bold
+    pdf.move_down 12
 
     bookmarks.each_with_index do |bookmark, index|
       title = bookmark['title'] || 'No Title'
       date = Date.parse(bookmark['created']).strftime('%m/%d')
 
-      pdf.text "#{index + 1}. #{title}", size: 10
+      pdf.text "#{index + 1}. #{title}", size: 13
       pdf.indent(20) do
-        pdf.text "Date: #{date}", size: 8, color: '888888'
+        pdf.text "Date: #{date}", size: 11, color: '888888'
       end
-      pdf.move_down 5
+      pdf.move_down 6
     end
 
     pdf.move_down 10
@@ -276,21 +276,21 @@ class WeeklyPDFGenerator
     pdf.fill_color '000000'
 
     pdf.move_down 8
-    pdf.text "[#{number}] #{title}", size: 14, style: :bold
+    pdf.text "[#{number}] #{title}", size: 18, style: :bold
     pdf.move_down 15
 
     # メタ情報
-    pdf.text "Date: #{created}", size: 9, color: '666666'
-    pdf.move_down 5
+    pdf.text "Date: #{created}", size: 12, color: '666666'
+    pdf.move_down 6
 
     # URL（リンク付き）
-    pdf.text "Link:", size: 9, color: '666666'
+    pdf.text "Link:", size: 12, color: '666666'
     pdf.indent(10) do
       if url.length > 80
         # 長いURLは折り返し
-        pdf.text url, size: 8, color: '0066CC'
+        pdf.text url, size: 10, color: '0066CC'
       else
-        pdf.text url, size: 9, color: '0066CC'
+        pdf.text url, size: 11, color: '0066CC'
       end
     end
     pdf.move_down 15
@@ -298,8 +298,8 @@ class WeeklyPDFGenerator
     # タグ
     if bookmark['tags'] && bookmark['tags'].any?
       tags_text = bookmark['tags'].map { |tag| "##{tag}" }.join(' ')
-      pdf.text "Tags: #{tags_text}", size: 9, color: '888888'
-      pdf.move_down 10
+      pdf.text "Tags: #{tags_text}", size: 12, color: '888888'
+      pdf.move_down 12
     end
 
     # 要約（箇条書き）
@@ -308,8 +308,8 @@ class WeeklyPDFGenerator
 
       puts "  [PDF生成] 要約を追加中: #{content[0..50]}..." # デバッグ
 
-      pdf.text "Summary:", size: 12, style: :bold
-      pdf.move_down 8
+      pdf.text "Summary:", size: 15, style: :bold
+      pdf.move_down 10
 
       # 箇条書きを整形して表示
       lines = content.split("\n").reject(&:empty?)
@@ -317,11 +317,11 @@ class WeeklyPDFGenerator
 
       lines.each_with_index do |line, i|
         if line.start_with?('- ')
-          pdf.text "  #{line}", size: 10, leading: 4
+          pdf.text "  #{line}", size: 13, leading: 6
         else
-          pdf.text "  • #{line}", size: 10, leading: 4
+          pdf.text "  • #{line}", size: 13, leading: 6
         end
-        pdf.move_down 4
+        pdf.move_down 6
       end
     else
       puts "  [PDF生成] 要約なし" # デバッグ
@@ -349,16 +349,16 @@ class WeeklyPDFGenerator
   def add_weekly_summary(pdf, summary_data)
     # 全体の総括
     if summary_data['overall_insights']
-      pdf.text "WEEKLY INSIGHTS", size: 18, style: :bold
+      pdf.text "WEEKLY INSIGHTS", size: 24, style: :bold
       pdf.move_down 15
 
       pdf.fill_color 'FFF8DC'
-      pdf.fill_rectangle [0, pdf.cursor], pdf.bounds.width, 60
+      pdf.fill_rectangle [0, pdf.cursor], pdf.bounds.width, 80
       pdf.fill_color '000000'
 
-      pdf.move_down 10
+      pdf.move_down 12
       pdf.indent(15) do
-        pdf.text summary_data['overall_insights'], size: 10, leading: 4
+        pdf.text summary_data['overall_insights'], size: 13, leading: 6
       end
       pdf.move_down 15
     end
@@ -403,18 +403,18 @@ class WeeklyPDFGenerator
     # 周辺キーワード（related_clusters）
     if summary_data['related_clusters'] && summary_data['related_clusters'].any?
       pdf.move_down 15
-      pdf.text "PERIPHERAL KEYWORDS / RELATED TOPICS", size: 14, style: :bold
-      pdf.move_down 10
+      pdf.text "PERIPHERAL KEYWORDS / RELATED TOPICS", size: 20, style: :bold
+      pdf.move_down 12
 
       summary_data['related_clusters'].each do |cluster|
-        pdf.text "• #{cluster['main_topic']}", size: 12, style: :bold, color: '0066CC'
-        pdf.move_down 5
+        pdf.text "• #{cluster['main_topic']}", size: 15, style: :bold, color: '0066CC'
+        pdf.move_down 6
 
         related_words = cluster['related_words'].join(', ')
         pdf.indent(15) do
-          pdf.text "Related: #{related_words}", size: 10, color: '666666'
+          pdf.text "Related: #{related_words}", size: 13, color: '666666'
         end
-        pdf.move_down 8
+        pdf.move_down 12
       end
     end
   end
