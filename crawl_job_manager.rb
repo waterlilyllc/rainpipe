@@ -174,7 +174,7 @@ class CrawlJobManager
   # @return [Boolean]
   def job_exists_for_bookmark?(raindrop_id)
     result = @db.get_first_value(
-      'SELECT COUNT(*) FROM crawl_jobs WHERE raindrop_id = ?',
+      "SELECT COUNT(*) FROM crawl_jobs WHERE raindrop_id = ? AND status IN ('pending', 'running')",
       raindrop_id
     )
     result > 0

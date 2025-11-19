@@ -2,7 +2,6 @@ require 'sinatra'
 require 'dotenv/load'
 require_relative 'raindrop_client'
 require_relative 'helpers'
-require_relative 'weekly_summarizer'
 require_relative 'bookmark_exporter'
 require_relative 'bookmark_categorizer'
 require_relative 'interest_manager'
@@ -47,14 +46,9 @@ get '/week/:date' do
   @bookmarks = enrich_bookmarks_with_content(@bookmarks)
   @exporter = BookmarkExporter.new
 
-  # 週サマリーを取得または生成
-  summarizer = WeeklySummarizer.new
-  @weekly_summary = summarizer.get_saved_summary(@week_start)
-
-  # サマリーがなければ生成
-  if @weekly_summary.nil? && !@bookmarks.empty?
-    @weekly_summary = summarizer.generate_summary(@bookmarks, @week_start)
-  end
+  # 週サマリーを取得
+  summary_file = File.join('./data/weekly_summaries', "summary_#{@week_start.strftime('%Y-%m-%d')}.json")
+  @weekly_summary = File.exist?(summary_file) ? JSON.parse(File.read(summary_file)) : nil
 
   erb :week
 end
@@ -65,14 +59,9 @@ get '/weekly' do
   @bookmarks = RaindropClient.new.get_weekly_bookmarks(@week_start, @week_end)
   @bookmarks = enrich_bookmarks_with_content(@bookmarks)
 
-  # 週サマリーを取得または生成
-  summarizer = WeeklySummarizer.new
-  @weekly_summary = summarizer.get_saved_summary(@week_start)
-
-  # サマリーがなければ生成
-  if @weekly_summary.nil? && !@bookmarks.empty?
-    @weekly_summary = summarizer.generate_summary(@bookmarks, @week_start)
-  end
+  # 週サマリーを取得
+  summary_file = File.join('./data/weekly_summaries', "summary_#{@week_start.strftime('%Y-%m-%d')}.json")
+  @weekly_summary = File.exist?(summary_file) ? JSON.parse(File.read(summary_file)) : nil
 
   erb :week
 end

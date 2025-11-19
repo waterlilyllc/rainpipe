@@ -120,18 +120,24 @@ class WeeklyPDFGenerator
     # 本文がないブックマークがあれば、クロールジョブを作成
     if missing_content_bookmarks.any?
       puts "⚠️  本文未取得のブックマークが#{missing_content_bookmarks.length}件あります"
-      puts "📥 本文取得ジョブを作成中..."
+      puts "📥 本文取得ジョブを並列作成中..."
 
-      missing_content_bookmarks.each do |bookmark|
-        puts "  クロール開始: #{bookmark['title']}"
-        job_uuid = @content_fetcher.fetch_content(bookmark['_id'], bookmark['link'])
+      # 並列でジョブ作成（Rubyスレッド使用）
+      threads = missing_content_bookmarks.map do |bookmark|
+        Thread.new do
+          puts "  クロール開始: #{bookmark['title']}"
+          job_uuid = @content_fetcher.fetch_content(bookmark['_id'], bookmark['link'])
 
-        if job_uuid
-          puts "    ✅ ジョブ作成完了 (#{job_uuid})"
-        else
-          puts "    ⚠️  ジョブ作成スキップまたは失敗"
+          if job_uuid
+            puts "    ✅ ジョブ作成完了 (#{job_uuid})"
+          else
+            puts "    ⚠️  ジョブ作成スキップまたは失敗"
+          end
         end
       end
+
+      # 全スレッドの完了を待つ
+      threads.each(&:join)
 
       puts ""
       puts "⏳ 本文取得を待機中（最大30分）..."

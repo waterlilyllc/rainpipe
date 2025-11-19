@@ -57,7 +57,39 @@
       <% if @weekly_summary %>
         <div class="weekly-summary">
           <h3>📋 今週のまとめ</h3>
-          <p><%= @weekly_summary %></p>
+
+          <% if @weekly_summary['overall_insights'] %>
+            <div class="summary-section">
+              <h4>💡 総括</h4>
+              <p><%= @weekly_summary['overall_insights'] %></p>
+            </div>
+          <% end %>
+
+          <% if @weekly_summary['keywords'] && @weekly_summary['keywords'].any? %>
+            <div class="summary-section">
+              <h4>🔑 キーワード別サマリー</h4>
+              <% @weekly_summary['keywords'].each do |keyword, data| %>
+                <div class="keyword-summary">
+                  <h5><%= keyword %> (<%= data['article_count'] %>記事)</h5>
+                  <% if data['summary'] %>
+                    <p style="white-space: pre-wrap;"><%= data['summary'] %></p>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <% if @weekly_summary['related_clusters'] && @weekly_summary['related_clusters'].any? %>
+            <div class="summary-section">
+              <h4>🔍 周辺キーワード</h4>
+              <% @weekly_summary['related_clusters'].each do |cluster| %>
+                <div class="cluster-item">
+                  <strong><%= cluster['main_topic'] %></strong>:
+                  <%= cluster['related_words'].join(', ') %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
         </div>
       <% end %>
     <% elsif @tag %>
