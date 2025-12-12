@@ -17,11 +17,13 @@ generator = WeeklyPDFGenerator.new
 begin
   puts "📅 先週のブックマークを集計中..."
 
-  # 先週の期間を計算
+  # 先週の期間を計算（月曜開始）
   today = Date.today
-  last_sunday = today - today.wday
-  week_end = last_sunday - 1
-  week_start = week_end - 6
+  this_monday = today - (today.wday - 1) % 7  # 今週の月曜
+  last_monday = this_monday - 7                # 先週の月曜
+  last_sunday = last_monday + 6                # 先週の日曜
+  week_start = last_monday
+  week_end = last_sunday
 
   puts "   期間: #{week_start.strftime('%Y/%m/%d')} - #{week_end.strftime('%Y/%m/%d')}"
   puts ""

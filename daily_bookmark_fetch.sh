@@ -16,7 +16,7 @@ echo "新着ブックマーク取得開始: $(date)" >> "$LOG_FILE"
 echo "========================================" >> "$LOG_FILE"
 
 # Rubyスクリプトを実行（新着取得と自動タグ付け）
-cd /var/git/rainpipe && /usr/bin/ruby fetch_all_bookmarks.rb >> "$LOG_FILE" 2>&1
+cd /var/git/rainpipe && /usr/bin/bundle exec ruby fetch_all_bookmarks.rb >> "$LOG_FILE" 2>&1
 
 # 終了ステータスを記録
 if [ $? -eq 0 ]; then
@@ -35,7 +35,7 @@ echo "========================================" >> "$LOG_FILE"
 # 5分待機（Gatherlyがページを取得する時間を確保）
 sleep 300
 
-cd /var/git/rainpipe && /usr/bin/ruby process_content_jobs.rb >> "$LOG_FILE" 2>&1
+cd /var/git/rainpipe && /usr/bin/bundle exec ruby process_content_jobs.rb >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     echo "✅ 本文取得ジョブ処理が正常に完了しました: $(date)" >> "$LOG_FILE"

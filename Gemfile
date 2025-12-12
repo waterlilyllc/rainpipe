@@ -9,6 +9,8 @@ gem 'rackup'
 gem 'prawn'
 gem 'prawn-table'
 gem 'mail'
+gem 'sqlite3'
+gem 'ruby-openai'
 
 group :development do
   gem 'rerun'

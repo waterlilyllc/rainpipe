@@ -16,7 +16,7 @@ class BookmarkContentManager
   def get_content(raindrop_id)
     result = @db.get_first_row(
       'SELECT * FROM bookmark_contents WHERE raindrop_id = ?',
-      raindrop_id
+      [raindrop_id]
     )
     result
   end
@@ -43,14 +43,7 @@ class BookmarkContentManager
               updated_at = ?
           WHERE raindrop_id = ?
         SQL
-        data[:url],
-        data[:title],
-        data[:content],
-        data[:content_type] || 'text',
-        data[:word_count],
-        data[:extracted_at] || now,
-        now,
-        raindrop_id
+        [data[:url], data[:title], data[:content], data[:content_type] || 'text', data[:word_count], data[:extracted_at] || now, now, raindrop_id]
       )
     else
       # 新規作成
@@ -60,15 +53,7 @@ class BookmarkContentManager
           (raindrop_id, url, title, content, content_type, word_count, extracted_at, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         SQL
-        raindrop_id,
-        data[:url],
-        data[:title],
-        data[:content],
-        data[:content_type] || 'text',
-        data[:word_count],
-        data[:extracted_at] || now,
-        now,
-        now
+        [raindrop_id, data[:url], data[:title], data[:content], data[:content_type] || 'text', data[:word_count], data[:extracted_at] || now, now, now]
       )
     end
 
@@ -84,7 +69,7 @@ class BookmarkContentManager
   def content_exists?(raindrop_id)
     result = @db.get_first_value(
       'SELECT COUNT(*) FROM bookmark_contents WHERE raindrop_id = ?',
-      raindrop_id
+      [raindrop_id]
     )
     result > 0
   end
@@ -118,7 +103,7 @@ class BookmarkContentManager
     placeholders = all_raindrop_ids.map { '?' }.join(',')
     existing_ids = @db.execute(
       "SELECT raindrop_id FROM bookmark_contents WHERE raindrop_id IN (#{placeholders})",
-      all_raindrop_ids
+      all_raindrop_ids  # この場合は配列をそのまま渡す（splat用）
     ).map { |row| row['raindrop_id'] }
 
     all_raindrop_ids - existing_ids
@@ -157,9 +142,7 @@ class BookmarkContentManager
               updated_at = ?
           WHERE raindrop_id = ?
         SQL
-        now,
-        now,
-        raindrop_id
+        [now, now, raindrop_id]
       )
     else
       # レコードがない場合は作成
@@ -169,11 +152,7 @@ class BookmarkContentManager
           (raindrop_id, url, fetch_attempted, last_fetch_attempt, created_at, updated_at)
           VALUES (?, ?, 1, ?, ?, ?)
         SQL
-        raindrop_id,
-        url,
-        now,
-        now,
-        now
+        [raindrop_id, url, now, now, now]
       )
     end
 
@@ -201,9 +180,7 @@ class BookmarkContentManager
               updated_at = ?
           WHERE raindrop_id = ?
         SQL
-        now,
-        now,
-        raindrop_id
+        [now, now, raindrop_id]
       )
     else
       # レコードがない場合は作成
@@ -213,11 +190,7 @@ class BookmarkContentManager
           (raindrop_id, url, fetch_attempted, fetch_failed, last_fetch_attempt, created_at, updated_at)
           VALUES (?, ?, 1, 1, ?, ?, ?)
         SQL
-        raindrop_id,
-        url,
-        now,
-        now,
-        now
+        [raindrop_id, url, now, now, now]
       )
     end
 
@@ -233,7 +206,7 @@ class BookmarkContentManager
   def fetch_failed?(raindrop_id)
     result = @db.get_first_value(
       'SELECT fetch_failed FROM bookmark_contents WHERE raindrop_id = ?',
-      raindrop_id
+      [raindrop_id]
     )
     result == 1
   rescue => e

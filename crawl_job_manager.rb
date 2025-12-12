@@ -24,11 +24,7 @@ class CrawlJobManager
         (job_id, raindrop_id, url, status, created_at, updated_at)
         VALUES (?, ?, ?, 'pending', ?, ?)
       SQL
-      job_uuid,
-      raindrop_id,
-      url,
-      now,
-      now
+      [job_uuid, raindrop_id, url, now, now]
     )
 
     true
@@ -46,7 +42,7 @@ class CrawlJobManager
   def get_job(job_id)
     @db.get_first_row(
       'SELECT * FROM crawl_jobs WHERE job_id = ?',
-      job_id
+      [job_id]
     )
   end
 
@@ -69,11 +65,7 @@ class CrawlJobManager
               completed_at = ?
           WHERE job_id = ?
         SQL
-        status,
-        error_message,
-        now,
-        now,
-        job_id
+        [status, error_message, now, now, job_id]
       )
     else
       @db.execute(
@@ -84,10 +76,7 @@ class CrawlJobManager
               updated_at = ?
           WHERE job_id = ?
         SQL
-        status,
-        error_message,
-        now,
-        job_id
+        [status, error_message, now, job_id]
       )
     end
 
@@ -113,7 +102,9 @@ class CrawlJobManager
         SELECT * FROM crawl_jobs
         WHERE status = 'failed'
           AND retry_count < max_retries
+          AND created_at > datetime('now', '-7 days')
         ORDER BY updated_at ASC
+        LIMIT 50
       SQL
     )
   end
@@ -129,7 +120,7 @@ class CrawlJobManager
         WHERE status IN ('pending', 'running')
           AND created_at < ?
       SQL
-      cutoff_time
+      [cutoff_time]
     )
   end
 
@@ -139,8 +130,7 @@ class CrawlJobManager
   def increment_retry_count(job_id)
     @db.execute(
       'UPDATE crawl_jobs SET retry_count = retry_count + 1, updated_at = ? WHERE job_id = ?',
-      Time.now.utc.iso8601,
-      job_id
+      [Time.now.utc.iso8601, job_id]
     )
     true
   rescue => e
@@ -175,7 +165,7 @@ class CrawlJobManager
   def job_exists_for_bookmark?(raindrop_id)
     result = @db.get_first_value(
       "SELECT COUNT(*) FROM crawl_jobs WHERE raindrop_id = ? AND status IN ('pending', 'running')",
-      raindrop_id
+      [raindrop_id]
     )
     result > 0
   end
@@ -186,7 +176,7 @@ class CrawlJobManager
   def get_job_by_raindrop_id(raindrop_id)
     @db.get_first_row(
       'SELECT * FROM crawl_jobs WHERE raindrop_id = ? ORDER BY created_at DESC LIMIT 1',
-      raindrop_id
+      [raindrop_id]
     )
   end
 
@@ -196,7 +186,7 @@ class CrawlJobManager
   def delete_job(job_id)
     @db.execute(
       'DELETE FROM crawl_jobs WHERE job_id = ?',
-      job_id
+      [job_id]
     )
     true
   rescue => e

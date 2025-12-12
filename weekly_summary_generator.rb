@@ -68,19 +68,34 @@ class WeeklySummaryGenerator
       summary_data[:overall_insights] = generate_overall_insights(summary_data[:keywords])
     end
 
-    # 6. 周辺キーワード（related_clusters）を抽出
+    # 6. 周辺キーワードと注目ワードをGPTで抽出
     begin
-      puts "\n🔍 周辺キーワードを抽出中..."
+      puts "\n🔍 今週のキーワードを抽出中..."
       week_key = "#{week_start_date}～#{week_end_date}"
       extractor = GPTKeywordExtractor.new
       analysis = extractor.extract_keywords_from_bookmarks(bookmarks, week_key)
 
-      if analysis && analysis['related_clusters']
-        summary_data[:related_clusters] = analysis['related_clusters']
-        puts "✓ #{analysis['related_clusters'].length}個の周辺キーワードを追加しました"
+      if analysis
+        # 注目キーワード（primary_interests）
+        if analysis['primary_interests']
+          summary_data[:primary_interests] = analysis['primary_interests']
+          puts "✓ #{analysis['primary_interests'].length}個の注目キーワードを追加しました"
+        end
+
+        # 周辺キーワード（related_clusters）
+        if analysis['related_clusters']
+          summary_data[:related_clusters] = analysis['related_clusters']
+          puts "✓ #{analysis['related_clusters'].length}個の周辺キーワードを追加しました"
+        end
+
+        # 新興キーワード（emerging_interests）
+        if analysis['emerging_interests']
+          summary_data[:emerging_interests] = analysis['emerging_interests']
+          puts "✓ #{analysis['emerging_interests'].length}個の新興キーワードを追加しました"
+        end
       end
     rescue => e
-      puts "⚠️  周辺キーワード抽出スキップ: #{e.message}"
+      puts "⚠️  キーワード抽出スキップ: #{e.message}"
     end
 
     # 7. 結果を保存
@@ -233,28 +248,54 @@ class WeeklySummaryGenerator
   def generate_overall_insights_from_bookmarks(bookmarks)
     return nil if bookmarks.empty?
 
-    # ブックマークのタイトルとタグから簡易サマリーを作成
+    require 'sqlite3'
+    require_relative 'bookmark_content_manager'
+
+    content_manager = BookmarkContentManager.new
+
+    # ブックマークのタイトル、タグ、要約から詳細サマリーを作成
     bookmarks_summary = bookmarks.map do |bm|
       tags = bm['tags'] ? bm['tags'].join(', ') : 'タグなし'
-      "「#{bm['title']}」(#{tags})"
-    end.join("\n")
+
+      # bookmark_contentsから要約を取得
+      content_data = content_manager.get_content(bm['_id'])
+      summary = content_data && content_data['content'] ? content_data['content'][0..200] : '要約なし'
+
+      "■ #{bm['title']}\nタグ: #{tags}\n要約: #{summary}..."
+    end.join("\n\n")
 
     prompt = <<~PROMPT
-      今週ブックマークした記事一覧:
+      今週ブックマークした記事一覧（#{bookmarks.length}件）:
+
       #{bookmarks_summary}
 
-      これらの記事から、今週の技術トレンドや関心事を200文字程度で総括してください。
-      エンジニアが今週注目すべきポイントを簡潔にまとめてください。
+      これらの記事から、以下の形式で詳細な週次総括を生成してください：
+
+      # 今週の技術トレンドサマリー
+
+      ## 主要な動向
+      - （箇条書きで5-7個、各項目は具体的な技術名やプロダクト名を含める）
+
+      ## 注目すべき技術・ツール
+      - （具体的な技術名、バージョン、特徴を含めて3-5個）
+
+      ## エンジニアへの実用的示唆
+      - （今週の記事から得られる実践的な学び、3-5個）
+
+      ## 来週以降の注目ポイント
+      - （トレンドの継続や発展が予想される分野、2-3個）
+
+      具体的で実用的な内容にしてください。各項目は簡潔かつ情報密度の高い記述にしてください。
     PROMPT
 
     begin
-      puts "📝 全ブックマークから総括を生成中..."
+      puts "📝 全ブックマークから詳細総括を生成中..."
       response = @openai.chat(
         parameters: {
           model: "gpt-4o-mini",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.7,
-          max_tokens: 300
+          max_tokens: 1500
         }
       )
 

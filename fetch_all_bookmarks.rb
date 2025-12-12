@@ -4,6 +4,8 @@ require 'dotenv/load'
 require 'json'
 require 'date'
 require_relative 'raindrop_client'
+require_relative 'bookmark_content_fetcher'
+require_relative 'bookmark_content_manager'
 
 puts "🌧️  Rainpipe - 全ブックマーク取得スクリプト"
 puts "=" * 60
@@ -67,7 +69,51 @@ begin
         puts "     ##{tag}: #{count} 件"
       end
     end
-    
+
+    # 新着ブックマーク（本文未取得）を検出して本文取得ジョブを作成
+    puts
+    puts "=" * 60
+    puts "📥 新着ブックマークの本文取得を開始..."
+
+    content_manager = BookmarkContentManager.new
+    content_fetcher = BookmarkContentFetcher.new
+
+    # 直近7日間のブックマークで本文がないものを検出
+    recent_cutoff = Date.today - 7
+    recent_bookmarks = all_bookmarks.select do |b|
+      created = Date.parse(b['created'])
+      created >= recent_cutoff
+    end
+
+    missing_content = recent_bookmarks.select do |b|
+      !content_manager.content_exists?(b['_id'])
+    end
+
+    if missing_content.any?
+      puts "⚠️  直近7日間で本文未取得: #{missing_content.length}件"
+      puts
+
+      created_jobs = []
+      missing_content.each_with_index do |bookmark, i|
+        puts "[#{i+1}/#{missing_content.length}] #{bookmark['title'][0..50]}..."
+        job_uuid = content_fetcher.fetch_content(bookmark['_id'], bookmark['link'])
+        if job_uuid
+          puts "  ✅ ジョブ作成: #{job_uuid}"
+          created_jobs << { raindrop_id: bookmark['_id'], job_uuid: job_uuid }
+        else
+          puts "  ⏭️  スキップ"
+        end
+        sleep 0.2  # API レート制限対策
+      end
+
+      puts
+      puts "📊 ジョブ作成結果: #{created_jobs.length}/#{missing_content.length} 件"
+    else
+      puts "✅ 直近7日間の新着ブックマークは全て本文取得済みです"
+    end
+
+    content_manager.close
+
   else
     puts "❌ ブックマークを取得できませんでした"
     exit 1

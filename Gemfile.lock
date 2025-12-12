@@ -5,6 +5,15 @@ GEM
     bigdecimal (3.3.1)
     date (3.5.0)
     dotenv (3.1.8)
+    event_stream_parser (1.0.0)
+    faraday (2.14.0)
+      faraday-net_http (>= 2.0, < 3.5)
+      json
+      logger
+    faraday-multipart (1.1.1)
+      multipart-post (~> 2.0)
+    faraday-net_http (3.4.2)
+      net-http (~> 0.5)
     ffi (1.17.2)
     ffi (1.17.2-arm64-darwin)
     ffi (1.17.2-x86_64-darwin)
@@ -21,7 +30,9 @@ GEM
       net-smtp
     matrix (0.4.3)
     mini_mime (1.1.5)
+    mini_portile2 (2.8.9)
     multi_json (1.15.0)
+    multipart-post (2.4.1)
     mustermann (3.0.3)
       ruby2_keywords (~> 0.0.1)
     net-http (0.6.0)
@@ -57,6 +68,10 @@ GEM
       ffi (~> 1.0)
     rerun (0.14.0)
       listen (~> 3.0)
+    ruby-openai (8.3.0)
+      event_stream_parser (>= 0.3.0, < 2.0.0)
+      faraday (>= 1)
+      faraday-multipart (>= 1)
     ruby2_keywords (0.0.5)
     sinatra (4.1.1)
       logger (>= 1.6.0)
@@ -71,6 +86,8 @@ GEM
       rack-protection (= 4.1.1)
       sinatra (= 4.1.1)
       tilt (~> 2.0)
+    sqlite3 (2.0.4)
+      mini_portile2 (~> 2.8.0)
     tilt (2.6.0)
     timeout (0.4.4)
     ttfunk (1.8.0)
@@ -92,8 +109,10 @@ DEPENDENCIES
   prawn-table
   rackup
   rerun
+  ruby-openai
   sinatra
   sinatra-contrib
+  sqlite3
 
 BUNDLED WITH
    2.5.23
