@@ -23,7 +23,7 @@ echo "=========================================="
 echo ""
 
 # 週刊PDFレポート生成＆Kindle送信
-/usr/bin/ruby generate_weekly_pdf.rb
+/usr/bin/bundle exec ruby generate_weekly_pdf.rb
 
 EXIT_CODE=$?
 
