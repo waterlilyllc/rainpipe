@@ -20,6 +20,12 @@ class BookmarkContentFetcher
   # @param url [String] URL
   # @return [String, nil] job_uuid または nil（失敗時）
   def fetch_content(raindrop_id, url)
+    # 既にコンテンツ取得済みの場合はスキップ
+    if @content_manager.content_exists?(raindrop_id)
+      puts "⏭️  Content already exists for raindrop_id: #{raindrop_id}"
+      return nil
+    end
+
     # 既に取得失敗済みの場合はスキップ
     if @content_manager.fetch_failed?(raindrop_id)
       puts "⏭️  Skipping permanently failed URL for raindrop_id: #{raindrop_id}"
@@ -71,7 +77,20 @@ class BookmarkContentFetcher
       status_result = @gatherly_client.get_job_status(job_id)
 
       if status_result[:error]
-        puts "⚠️ Error checking job #{job_id}: #{status_result[:error]}"
+        error_msg = status_result[:error].to_s
+        # 404 = ジョブが存在しない（期限切れ）
+        if error_msg.include?('404') || error_msg.include?('Not Found')
+          puts "   ❌ Job expired (404): #{job_id[0..8]}..."
+          @job_manager.update_job_status(job_id, 'failed', 'Job expired on Gatherly API')
+          stats[:failed] += 1
+        # Processing failed = Gatherly側で失敗
+        elsif error_msg.include?('Processing failed') || error_msg.include?('No data returned')
+          puts "   ❌ Processing failed: #{job_id[0..8]}..."
+          @job_manager.update_job_status(job_id, 'failed', 'Gatherly processing failed')
+          stats[:failed] += 1
+        else
+          puts "⚠️ Error checking job #{job_id}: #{error_msg}"
+        end
         next
       end
 
@@ -94,13 +113,15 @@ class BookmarkContentFetcher
         stats[:failed] += 1
         puts "   ❌ Job failed: #{error_msg}"
 
-      when 'running', 'pending'
-        # まだ実行中
-        @job_manager.update_job_status(job_id, api_status)
+      when 'running', 'pending', 'queued'
+        # まだ実行中/待機中
+        @job_manager.update_job_status(job_id, 'pending')
         stats[:still_pending] += 1
 
       else
         puts "   ⚠️ Unknown status: #{api_status}"
+        @job_manager.update_job_status(job_id, 'pending')
+        stats[:still_pending] += 1
       end
 
       # API負荷軽減のため少し待機
