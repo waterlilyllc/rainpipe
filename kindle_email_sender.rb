@@ -6,7 +6,7 @@ class KindleEmailSender
   def initialize(progress_callback = nil)
     @gmail_address = ENV['GMAIL_ADDRESS']
     @gmail_app_password = ENV['GMAIL_APP_PASSWORD']
-    @kindle_email = ENV['KINDLE_EMAIL']
+    @kindle_emails = [ENV['KINDLE_EMAIL'], ENV['KINDLE_EMAIL_2']].compact.reject(&:empty?)
     @progress_callback = progress_callback || ProgressCallback.null_callback
 
     validate_credentials!
@@ -37,63 +37,51 @@ class KindleEmailSender
     ProgressReporter.progress(nil, "Kindle メール送信中", :email)
     ProgressReporter.indented("件名: #{subject}")
     ProgressReporter.indented("ファイル: #{File.basename(pdf_path)} (#{file_size.round(2)}MB)")
-    ProgressReporter.indented("送信先: #{@kindle_email}")
+    ProgressReporter.indented("送信先: #{@kindle_emails.join(', ')}")
 
     # Task 3.5: Progress callback に email_sending ステージを報告
     @progress_callback.report_stage('email_sending', 95, {
-      recipient: @kindle_email,
+      recipient: @kindle_emails.join(', '),
       file_size_mb: file_size,
       subject: subject
     })
 
-    begin
-      mail = Mail.new do
-        from     ENV['GMAIL_ADDRESS']
-        to       ENV['KINDLE_EMAIL']
-        subject  subject
-        body     "週間ブックマークサマリーをお送りします。\n\nRainpipe より自動送信"
+    success_count = 0
+    @kindle_emails.each do |kindle_email|
+      begin
+        mail = Mail.new do |m|
+          m.from     ENV['GMAIL_ADDRESS']
+          m.to       kindle_email
+          m.subject  subject
+          m.body     "週間ブックマークサマリーをお送りします。\n\nRainpipe より自動送信"
 
-        add_file pdf_path
+          m.add_file pdf_path
+        end
+
+        mail.delivery_method :smtp, smtp_settings
+
+        mail.deliver!
+
+        ProgressReporter.success("送信成功: #{kindle_email}")
+        success_count += 1
+      rescue => e
+        ProgressReporter.error("送信失敗: #{kindle_email}", e.message)
       end
-
-      mail.delivery_method :smtp, smtp_settings
-
-      mail.deliver!
-
-      ProgressReporter.success("メール送信成功！")
-
-      # Task 3.5: Progress callback にメール送信完了イベントを報告
-      @progress_callback.report_stage('email_sending', 100, {
-        recipient: @kindle_email,
-        status: 'success'
-      })
-
-      true
-    rescue Timeout::Error => e
-      ProgressReporter.error("メール送信失敗（タイムアウト）", "SMTP接続がタイムアウトしました。ネットワークを確認してください。")
-      @progress_callback.report_event('error', 'メール送信失敗（タイムアウト）', {
-        error: e.message
-      })
-      false
-    rescue Net::SMTPAuthenticationError => e
-      ProgressReporter.error("メール送信失敗（認証エラー）", "Gmail認証情報が正しくありません。アプリパスワード設定を確認してください。")
-      @progress_callback.report_event('error', 'メール送信失敗（認証エラー）', {
-        error: e.message
-      })
-      false
-    rescue Net::SMTPServerBusy => e
-      ProgressReporter.error("メール送信失敗（SMTPサーバビジー）", e.message)
-      @progress_callback.report_event('error', 'メール送信失敗（SMTPサーバビジー）', {
-        error: e.message
-      })
-      false
-    rescue => e
-      ProgressReporter.error("メール送信失敗", "#{e.class.name}: #{e.message}")
-      @progress_callback.report_event('error', "メール送信失敗: #{e.class.name}", {
-        error: e.message
-      })
-      false
     end
+
+    if success_count == @kindle_emails.length
+      ProgressReporter.success("全#{success_count}件 送信完了！")
+    elsif success_count > 0
+      ProgressReporter.progress(nil, "#{success_count}/#{@kindle_emails.length}件 送信成功")
+    end
+
+    # Task 3.5: Progress callback にメール送信完了イベントを報告
+    @progress_callback.report_stage('email_sending', 100, {
+      recipient: @kindle_emails.join(', '),
+      status: success_count > 0 ? 'success' : 'failed'
+    })
+
+    success_count > 0
   end
 
   private
@@ -102,7 +90,7 @@ class KindleEmailSender
     missing = []
     missing << 'GMAIL_ADDRESS' unless @gmail_address
     missing << 'GMAIL_APP_PASSWORD' unless @gmail_app_password
-    missing << 'KINDLE_EMAIL' unless @kindle_email
+    missing << 'KINDLE_EMAIL' if @kindle_emails.empty?
 
     if missing.any?
       raise "環境変数が設定されていません: #{missing.join(', ')}"
