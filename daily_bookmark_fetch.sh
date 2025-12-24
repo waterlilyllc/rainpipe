@@ -11,12 +11,16 @@ LOG_FILE="$LOG_DIR/daily_bookmark_fetch_${DATE}.log"
 # 環境変数を読み込む
 export $(grep -v '^#' /var/git/rainpipe/.env | xargs)
 
+# Ruby gemのパスを設定（cron環境用）
+export GEM_HOME=/home/terubo/.gem
+export GEM_PATH=/home/terubo/.gem:/var/lib/gems/3.0.0
+
 echo "========================================" >> "$LOG_FILE"
 echo "新着ブックマーク取得開始: $(date)" >> "$LOG_FILE"
 echo "========================================" >> "$LOG_FILE"
 
 # Rubyスクリプトを実行（新着取得と自動タグ付け）
-cd /var/git/rainpipe && /usr/bin/bundle exec ruby fetch_all_bookmarks.rb >> "$LOG_FILE" 2>&1
+cd /var/git/rainpipe && /usr/local/bin/bundle exec ruby fetch_all_bookmarks.rb >> "$LOG_FILE" 2>&1
 
 # 終了ステータスを記録
 if [ $? -eq 0 ]; then
@@ -35,7 +39,7 @@ echo "========================================" >> "$LOG_FILE"
 # 5分待機（Gatherlyがページを取得する時間を確保）
 sleep 300
 
-cd /var/git/rainpipe && /usr/bin/bundle exec ruby process_content_jobs.rb >> "$LOG_FILE" 2>&1
+cd /var/git/rainpipe && /usr/local/bin/bundle exec ruby process_content_jobs.rb >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     echo "✅ 本文取得ジョブ処理が正常に完了しました: $(date)" >> "$LOG_FILE"
