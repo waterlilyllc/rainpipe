@@ -97,6 +97,12 @@ class WeeklyPDFGenerator
     elsif @summary_generator
       puts "✨ 週次サマリーを生成中..."
       @summary_generator.generate_weekly_summary(week_start.to_s)
+      # 生成後、ファイルからリロードして文字列キーに統一
+      if File.exist?(summary_file)
+        JSON.parse(File.read(summary_file))
+      else
+        nil
+      end
     else
       puts "⚠️ サマリー生成をスキップ（OPENAI_API_KEY未設定）"
       nil
